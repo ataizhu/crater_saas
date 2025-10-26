@@ -126,6 +126,7 @@ Route::get('/installation', function () {
 // Move other http requests to the Vue App
 // -------------------------------------------------
 
+// Crater tenant admin interface  
 Route::get('/admin/{vue?}', function () {
     return view('app');
 })->where('vue', '[\/\w\.-]*')->name('admin.dashboard')->middleware(['install', 'redirect-if-unauthenticated']);

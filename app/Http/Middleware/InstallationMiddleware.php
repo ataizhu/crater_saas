@@ -16,6 +16,13 @@ class InstallationMiddleware
      */
     public function handle($request, Closure $next)
     {
+        // Skip for Filament admin panel, assets and Livewire requests
+        if ($request->is('super-admin') || $request->is('super-admin/*') || 
+            $request->is('filament/*') || $request->is('vendor/livewire/*') ||
+            $request->is('livewire/*')) {
+            return $next($request);
+        }
+
         if (! \Storage::disk('local')->has('database_created')) {
             return redirect('/installation');
         }

@@ -55,6 +55,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Main Domain (for multi-tenancy)
+    |--------------------------------------------------------------------------
+    |
+    | This is the main domain where the admin panel will be accessible.
+    | Tenant subdomains will be created based on this domain.
+    |
+    */
+
+    'main_domain' => env('MAIN_DOMAIN', 'crater.test'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
@@ -169,6 +181,7 @@ return [
         Crater\Providers\RouteServiceProvider::class,
         Crater\Providers\DropboxServiceProvider::class,
         Crater\Providers\ViewServiceProvider::class,
+        App\Providers\TenancyServiceProvider::class,
         Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
     ],
 

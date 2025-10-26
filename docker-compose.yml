@@ -18,20 +18,19 @@ services:
       - crater
 
   db:
-    image: mariadb
+    image: postgres:14-alpine
     restart: always
     volumes:
-      - db:/var/lib/mysql
+      - db:/var/lib/postgresql/data
       # If you want to persist data on the host, comment the line above this one...
       # and uncomment the line under this one.
-      #- ./docker-compose/db/data:/var/lib/mysql:rw,delegated
+      #- ./docker-compose/db/data:/var/lib/postgresql/data:rw,delegated
     environment:
-      MYSQL_USER: crater
-      MYSQL_PASSWORD: crater
-      MYSQL_DATABASE: crater
-      MYSQL_ROOT_PASSWORD: crater
+      POSTGRES_USER: crater
+      POSTGRES_PASSWORD: crater
+      POSTGRES_DB: crater_saas
     ports:
-      - '33006:3306'
+      - '54320:5432'  # Внешний порт 54320 чтобы не конфликтовать с локальным PostgreSQL
     networks:
       - crater
 

@@ -15,6 +15,7 @@
     "doctrine/dbal": "^2.10",
     "dragonmantank/cron-expression": "^3.1",
     "fideloper/proxy": "^4.0",
+    "filament/filament": "*",
     "fruitcake/laravel-cors": "^1.0",
     "guzzlehttp/guzzle": "^7.0.1",
     "innocenzi/laravel-vite": "^0.1.1",
@@ -32,6 +33,7 @@
     "spatie/flysystem-dropbox": "^1.2",
     "spatie/laravel-backup": "^6.11",
     "spatie/laravel-medialibrary": "^8.7",
+    "stancl/tenancy": "*",
     "vinkla/hashids": "^9.0"
   },
   "require-dev": {
@@ -51,6 +53,7 @@
   "autoload": {
     "psr-4": {
       "Crater\\": "app/",
+      "App\\": "app/",
       "Database\\Factories\\": "database/factories/",
       "Database\\Seeders\\": "database/seeders/",
       "Modules\\": "Modules/"

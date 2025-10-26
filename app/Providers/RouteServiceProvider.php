@@ -47,14 +47,15 @@ class RouteServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
 
         $this->routes(function () {
-            Route::prefix('api')
-                ->middleware('api')
-                ->namespace($this->namespace)
-                ->group(base_path('routes/api.php'));
-
+            // API routes загружаются в routes/tenant.php для тенантов
+            // и в routes/central.php для центрального домена
+            
+            // Central domain routes (Filament admin panel)
             Route::middleware('web')
                 ->namespace($this->namespace)
-                ->group(base_path('routes/web.php'));
+                ->group(base_path('routes/central.php'));
+            
+            // Tenant routes handled by TenancyServiceProvider via routes/tenant.php
         });
     }
 

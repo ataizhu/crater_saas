@@ -52,6 +52,11 @@ return [
             'provider' => 'customers',
             'hash' => false,
         ],
+
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admin_users',
+        ],
     ],
 
     /*
@@ -80,6 +85,11 @@ return [
         'customers' => [
             'driver' => 'eloquent',
             'model' => \Crater\Models\Customer::class,
+        ],
+
+        'admin_users' => [
+            'driver' => 'eloquent',
+            'model' => \App\Models\AdminUser::class,
         ],
     ],
 
