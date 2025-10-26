@@ -10,8 +10,8 @@ class Dashboard extends Page
 
     protected static string $view = 'filament.pages.dashboard';
     
-    protected static ?string $navigationLabel = 'Dashboard';
+    protected static ?string $navigationLabel = 'Панель управления';
     
-    protected static ?string $title = 'Dashboard';
+    protected static ?string $title = 'Панель управления';
 }
 

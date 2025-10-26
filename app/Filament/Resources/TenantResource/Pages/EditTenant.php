@@ -14,12 +14,13 @@ class EditTenant extends EditRecord
     {
         return [
             Actions\Action::make('visit')
-                ->label('Visit Site')
+                ->label('Открыть сайт')
                 ->icon('heroicon-o-external-link')
                 ->url(fn () => 'http://' . $this->record->id . '.' . config('app.main_domain'))
                 ->openUrlInNewTab()
                 ->color('success'),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->label('Удалить'),
         ];
     }
 }

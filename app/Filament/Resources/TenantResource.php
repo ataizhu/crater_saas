@@ -19,52 +19,54 @@ class TenantResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-office-building';
     
-    protected static ?string $navigationLabel = 'Tenants';
+    protected static ?string $navigationLabel = 'Клиенты';
     
-    protected static ?string $pluralLabel = 'Tenants';
+    protected static ?string $pluralLabel = 'Клиенты';
+    
+    protected static ?string $label = 'Клиент';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Placeholder::make('url')
-                    ->label('Tenant URL')
-                    ->content(fn ($record) => $record ? 'http://' . $record->id . '.' . config('app.main_domain') : 'Will be generated after creation')
+                    ->label('URL клиента')
+                    ->content(fn ($record) => $record ? 'http://' . $record->id . '.' . config('app.main_domain') : 'Будет создан после сохранения')
                     ->hidden(fn ($livewire) => $livewire instanceof Pages\CreateTenant),
                     
                 Forms\Components\TextInput::make('id')
-                    ->label('Subdomain')
+                    ->label('Субдомен')
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255)
-                    ->helperText('Will be accessible at: subdomain.' . config('app.main_domain'))
+                    ->helperText('Будет доступен на: subdomain.crater.test')
                     ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                     
                 Forms\Components\TextInput::make('name')
-                    ->label('Company Name')
+                    ->label('Название компании')
                     ->required()
                     ->maxLength(255),
                     
                 Forms\Components\TextInput::make('owner_name')
-                    ->label('Owner Name')
+                    ->label('Имя владельца')
                     ->required()
                     ->maxLength(255),
                     
                 Forms\Components\TextInput::make('owner_email')
-                    ->label('Owner Email')
+                    ->label('Email владельца')
                     ->email()
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255),
                     
                 Forms\Components\TextInput::make('owner_password')
-                    ->label('Owner Password')
+                    ->label('Пароль владельца')
                     ->password()
                     ->required(fn ($livewire) => $livewire instanceof Pages\CreateTenant)
                     ->dehydrated(fn ($state) => filled($state))
                     ->minLength(8)
                     ->maxLength(255)
-                    ->helperText('Leave empty to keep current password when editing.'),
+                    ->helperText('Оставьте пустым чтобы сохранить текущий пароль при редактировании.'),
             ]);
     }
 
@@ -73,19 +75,19 @@ class TenantResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('id')
-                    ->label('Subdomain')
+                    ->label('Субдомен')
                     ->searchable()
                     ->sortable()
                     ->url(fn ($record) => 'http://' . $record->id . '.' . config('app.main_domain'))
                     ->openUrlInNewTab(),
                     
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Company Name')
+                    ->label('Название компании')
                     ->searchable()
                     ->sortable(),
                     
                 Tables\Columns\TextColumn::make('owner_name')
-                    ->label('Owner')
+                    ->label('Владелец')
                     ->searchable(),
                     
                 Tables\Columns\TextColumn::make('owner_email')
@@ -93,7 +95,7 @@ class TenantResource extends Resource
                     ->searchable(),
                     
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label('Создан')
                     ->dateTime()
                     ->sortable(),
             ])
@@ -102,15 +104,18 @@ class TenantResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('visit')
-                    ->label('Visit Site')
+                    ->label('Открыть сайт')
                     ->icon('heroicon-o-external-link')
                     ->url(fn ($record) => 'http://' . $record->id . '.' . config('app.main_domain'))
                     ->openUrlInNewTab(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->label('Редактировать'),
+                Tables\Actions\DeleteAction::make()
+                    ->label('Удалить'),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\DeleteBulkAction::make()
+                    ->label('Удалить выбранные'),
             ]);
     }
     

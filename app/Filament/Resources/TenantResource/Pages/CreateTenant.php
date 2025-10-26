@@ -20,15 +20,15 @@ class CreateTenant extends CreateRecord
             InitializeTenantJob::dispatchSync($this->record);
             
             \Filament\Notifications\Notification::make()
-                ->title('Tenant created & initialized!')
-                ->body("Tenant ready!\n\nFor local development, add to /etc/hosts:\n127.0.0.1 {$this->record->id}.crater.test\n\nThen visit: {$tenantUrl}")
+                ->title('Клиент создан и инициализирован!')
+                ->body("Клиент готов!\n\nДля локальной разработки добавьте в /etc/hosts:\n127.0.0.1 {$this->record->id}.crater.test\n\nЗатем откройте: {$tenantUrl}")
                 ->success()
                 ->duration(10000)
                 ->send();
         } catch (\Exception $e) {
             \Filament\Notifications\Notification::make()
-                ->title('Tenant created, but initialization failed!')
-                ->body("Run manually: php artisan tenant:initialize {$this->record->id}\n\nError: " . $e->getMessage())
+                ->title('Клиент создан, но инициализация не удалась!')
+                ->body("Запустите вручную: php artisan tenant:initialize {$this->record->id}\n\nОшибка: " . $e->getMessage())
                 ->danger()
                 ->duration(15000)
                 ->send();
