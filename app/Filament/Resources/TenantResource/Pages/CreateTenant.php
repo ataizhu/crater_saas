@@ -13,16 +13,27 @@ class CreateTenant extends CreateRecord
 
     protected function afterCreate(): void
     {
-        // Инициализация отключена - запускать вручную командой:
-        // php artisan tenant:initialize {tenant_id}
-        // InitializeTenantJob::dispatchSync($this->record);
-        
         $tenantUrl = 'http://' . $this->record->id . '.' . config('app.main_domain');
         
-        \Filament\Notifications\Notification::make()
-            ->title('Tenant created!')
-            ->body("1. Run: php artisan tenant:initialize {$this->record->id}\n2. Add to /etc/hosts: 127.0.0.1 {$this->record->id}.crater.test\n3. Visit: {$tenantUrl}")
-            ->success()
-            ->send();
+        try {
+            // Автоматическая инициализация тенанта
+            InitializeTenantJob::dispatchSync($this->record);
+            
+            \Filament\Notifications\Notification::make()
+                ->title('Tenant created & initialized!')
+                ->body("Tenant ready!\n\nFor local development, add to /etc/hosts:\n127.0.0.1 {$this->record->id}.crater.test\n\nThen visit: {$tenantUrl}")
+                ->success()
+                ->duration(10000)
+                ->send();
+        } catch (\Exception $e) {
+            \Filament\Notifications\Notification::make()
+                ->title('Tenant created, but initialization failed!')
+                ->body("Run manually: php artisan tenant:initialize {$this->record->id}\n\nError: " . $e->getMessage())
+                ->danger()
+                ->duration(15000)
+                ->send();
+                
+            \Log::error("Tenant initialization failed: " . $e->getMessage());
+        }
     }
 }

@@ -77,7 +77,15 @@ class InitializeTenantCommand extends Command
         
         // Привязываем пользователя к компании
         $company->update(['owner_id' => $user->id]);
-        $user->companies()->attach($company->id);
+        $user->companies()->sync([$company->id]);
+        
+        // Настраиваем компанию: роли, права, методы оплаты, единицы измерения, настройки
+        $this->info("Setting up company defaults...");
+        $company->setupDefaultData();
+        
+        // Назначаем роль super admin пользователю
+        \Silber\Bouncer\BouncerFacade::scope()->to($company->id);
+        \Silber\Bouncer\BouncerFacade::assign('super admin')->to($user);
         
         // Создаем маркер что установка завершена (внутри контекста тенанта)
         \Storage::disk('local')->put('database_created', now());

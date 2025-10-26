@@ -53,6 +53,13 @@ class InitializeTenantJob
                 '--force' => true,
             ]);
 
+            // Создаем компанию
+            \Log::info("Creating company for tenant: {$this->tenant->id}");
+            $company = \Crater\Models\Company::create([
+                'name' => $data['name'],
+                'unique_hash' => \Illuminate\Support\Str::random(20),
+            ]);
+            
             // Создаем owner пользователя в схеме тенанта (если его еще нет)
             // Примечание: User модель автоматически хеширует пароль через setPasswordAttribute
             \Log::info("Creating owner user for tenant: {$this->tenant->id}");
@@ -65,6 +72,18 @@ class InitializeTenantJob
                 ]
             );
             
+            // Привязываем пользователя к компании
+            $company->update(['owner_id' => $user->id]);
+            $user->companies()->sync([$company->id]);
+            
+            // Настраиваем компанию: роли, права, методы оплаты, единицы измерения, настройки
+            \Log::info("Setting up company defaults for tenant: {$this->tenant->id}");
+            $company->setupDefaultData();
+            
+            // Назначаем роль super admin пользователю
+            \Silber\Bouncer\BouncerFacade::scope()->to($company->id);
+            \Silber\Bouncer\BouncerFacade::assign('super admin')->to($user);
+            
             // Создаем маркер что установка завершена
             \Storage::disk('local')->put('database_created', now());
             
@@ -73,12 +92,20 @@ class InitializeTenantJob
 
             tenancy()->end();
 
-            // Отправляем email с доступами
-            $loginUrl = 'http://' . $this->tenant->domains->first()->domain;
-            
-            Mail::to($data['owner_email'])->send(
-                new TenantCreatedMail($this->tenant, $loginUrl)
-            );
+            // Отправляем email с доступами (если настроен mail driver)
+            try {
+                $loginUrl = 'http://' . $this->tenant->domains->first()->domain;
+                
+                if (config('mail.driver') !== 'log' && config('mail.driver') !== null) {
+                    Mail::to($data['owner_email'])->send(
+                        new TenantCreatedMail($this->tenant, $loginUrl)
+                    );
+                    \Log::info("Tenant creation email sent to: {$data['owner_email']}");
+                }
+            } catch (\Exception $emailError) {
+                // Email не критичен - просто логируем ошибку
+                \Log::warning("Failed to send tenant creation email: " . $emailError->getMessage());
+            }
             
             \Log::info("Tenant {$this->tenant->id} initialized successfully!");
         } catch (\Exception $e) {
