@@ -52,6 +52,13 @@ class InitializeTenantJob
                 '--path' => 'database/migrations/tenant',
                 '--force' => true,
             ]);
+            
+            // Заполняем таблицу валют
+            \Log::info("Seeding currencies for tenant: {$this->tenant->id}");
+            Artisan::call('db:seed', [
+                '--class' => 'Database\\Seeders\\CurrenciesTableSeeder',
+                '--force' => true,
+            ]);
 
             // Создаем компанию
             \Log::info("Creating company for tenant: {$this->tenant->id}");

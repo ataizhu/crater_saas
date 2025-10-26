@@ -56,6 +56,13 @@ class InitializeTenantCommand extends Command
         
         $this->info(Artisan::output());
         
+        // Заполняем таблицу валют
+        $this->info("Seeding currencies...");
+        Artisan::call('db:seed', [
+            '--class' => 'Database\\Seeders\\CurrenciesTableSeeder',
+            '--force' => true,
+        ]);
+        
         // Создаем компанию
         $this->info("Creating company...");
         $company = \Crater\Models\Company::create([
