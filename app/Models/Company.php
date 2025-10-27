@@ -219,7 +219,7 @@ class Company extends Model implements HasMedia
             'payment_from_customer_address_format' => $paymentFromCustomerAddress,
             'currency' => request()->currency ?? 67, // KGS - Kyrgyzstani som
             'time_zone' => 'Asia/Bishkek', // Kyrgyzstan timezone
-            'language' => 'en',
+            'language' => 'ru', // Russian language by default
             'fiscal_year' => '1-12',
             'carbon_date_format' => 'Y/m/d',
             'moment_date_format' => 'YYYY/MM/DD',
