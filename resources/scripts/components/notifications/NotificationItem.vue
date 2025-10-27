@@ -69,8 +69,8 @@
                 notification.title
                   ? notification.title
                   : success
-                  ? 'Success!'
-                  : 'Error'
+                  ? t('general.success')
+                  : t('general.error')
               }}
             </p>
             <p
@@ -82,8 +82,8 @@
                 notification.message
                   ? notification.message
                   : success
-                  ? 'Successful'
-                  : 'Something went wrong'
+                  ? t('general.successful')
+                  : t('general.something_went_wrong')
               }}
             </p>
           </div>
@@ -128,6 +128,9 @@
 <script setup>
 import { onMounted, computed, ref } from 'vue'
 import { useNotificationStore } from '@/scripts/stores/notification'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   notification: {

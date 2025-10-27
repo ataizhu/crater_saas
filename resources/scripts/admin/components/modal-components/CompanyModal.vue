@@ -189,9 +189,13 @@ async function getInitials() {
   await globalStore.fetchCurrencies()
   await globalStore.fetchCountries()
 
-  newCompanyForm.currency = companyStore.selectedCompanyCurrency.id
+  // Set default currency (use selected company currency or first available)
+  newCompanyForm.currency = companyStore.selectedCompanyCurrency?.id || 
+    (globalStore.currencies?.length > 0 ? globalStore.currencies[0].id : null)
+  
+  // Set default country (use selected company country if exists)
   newCompanyForm.address.country_id =
-    companyStore.selectedCompany.address.country_id
+    companyStore.selectedCompany?.address?.country_id || null
 
   isFetchingInitialData.value = false
 }

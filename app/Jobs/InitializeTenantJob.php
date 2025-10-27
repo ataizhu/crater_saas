@@ -59,6 +59,13 @@ class InitializeTenantJob
                 '--class' => 'Database\\Seeders\\CurrenciesTableSeeder',
                 '--force' => true,
             ]);
+            
+            // Заполняем таблицу стран
+            \Log::info("Seeding countries for tenant: {$this->tenant->id}");
+            Artisan::call('db:seed', [
+                '--class' => 'Database\\Seeders\\CountriesTableSeeder',
+                '--force' => true,
+            ]);
 
             // Создаем компанию
             \Log::info("Creating company for tenant: {$this->tenant->id}");

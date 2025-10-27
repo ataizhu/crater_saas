@@ -63,6 +63,13 @@ class InitializeTenantCommand extends Command
             '--force' => true,
         ]);
         
+        // Заполняем таблицу стран
+        $this->info("Seeding countries...");
+        Artisan::call('db:seed', [
+            '--class' => 'Database\\Seeders\\CountriesTableSeeder',
+            '--force' => true,
+        ]);
+        
         // Создаем компанию
         $this->info("Creating company...");
         $company = \Crater\Models\Company::create([

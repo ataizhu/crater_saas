@@ -100,7 +100,11 @@
     "pay_invoice": "Оплатить счет",
     "login_successfully": "Вход выполнен!",
     "logged_out_successfully": "Вы успешно вышли",
-    "mark_as_default": "Установить по умолчанию"
+    "mark_as_default": "Установить по умолчанию",
+    "success": "Успешно!",
+    "error": "Ошибка",
+    "successful": "Операция выполнена успешно",
+    "something_went_wrong": "Что-то пошло не так"
   },
   "dashboard": {
     "select_year": "Выберите год",
@@ -1328,7 +1332,7 @@
     "logo_preview": "Предпросмотр",
     "preferences": "Настройки",
     "preferences_desc": "Настройки системы по-умолчанию.",
-    "currency_set_alert": "The company's currency cannot be changed later.",
+    "currency_set_alert": "Валюта компании не может быть изменена позже.",
     "country": "Страна",
     "state": "Область",
     "city": "Город",
