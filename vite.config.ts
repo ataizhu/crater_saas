@@ -2,6 +2,7 @@ import { defineConfig } from 'laravel-vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
+    base: '/build/', // Fix asset paths
     server: {
         watch: {
             ignored: ['**/.env/**'],
