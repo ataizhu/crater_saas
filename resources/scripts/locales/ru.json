@@ -1120,6 +1120,8 @@
       "currency_layer": "Currency Layer",
       "open_exchange_rate": "Open Exchange Rate",
       "currency_converter": "Currency Converter",
+      "nbkr": "Национальный банк Кыргызстана (НБКР)",
+      "nbkr_free_api": "Это бесплатный API, не требует ключа",
       "server": "Сервер",
       "url": "URL-адрес",
       "active": "Активный",

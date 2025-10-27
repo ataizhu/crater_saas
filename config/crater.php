@@ -362,16 +362,17 @@ return [
             'ability' => 'view-expense',
             'model' => Expense::class
         ],
-        [
-            'title' => 'navigation.modules',
-            'group' => 3,
-            'link' => '/admin/modules',
-            'icon' => 'PuzzleIcon',
-            'name' => 'Modules',
-            'owner_only' => true,
-            'ability' => '',
-            'model' => ''
-        ],
+        // Скрыт пункт меню "Инструменты" (Modules) - не используется в SaaS версии
+        // [
+        //     'title' => 'navigation.modules',
+        //     'group' => 3,
+        //     'link' => '/admin/modules',
+        //     'icon' => 'PuzzleIcon',
+        //     'name' => 'Modules',
+        //     'owner_only' => true,
+        //     'ability' => '',
+        //     'model' => ''
+        // ],
         [
             'title' => 'navigation.users',
             'group' => 3,
@@ -493,6 +494,7 @@ return [
         ['key' => 'settings.exchange_rate.currency_freak', 'value' => 'currency_freak'],
         ['key' => 'settings.exchange_rate.currency_layer', 'value' => 'currency_layer'],
         ['key' => 'settings.exchange_rate.open_exchange_rate', 'value' => 'open_exchange_rate'],
+        ['key' => 'settings.exchange_rate.nbkr', 'value' => 'nbkr'],
     ],
 
     /*

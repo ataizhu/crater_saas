@@ -67,6 +67,7 @@
           </BaseInputGroup>
 
           <BaseInputGroup
+            v-if="!isNBKR"
             :label="$t('settings.exchange_rate.key')"
             required
             :content-loading="isFetchingInitialData"
@@ -85,6 +86,12 @@
               :invalid="v$.currentExchangeRate.key.$error"
             />
           </BaseInputGroup>
+          
+          <BaseInfoAlert
+            v-if="isNBKR"
+            class="mt-2"
+            :title="$t('settings.exchange_rate.nbkr_free_api')"
+          />
 
           <BaseInputGroup
             v-if="exchangeRateStore.supportedCurrencies.length"
@@ -216,7 +223,10 @@ const rules = computed(() => {
   return {
     currentExchangeRate: {
       key: {
-        required: helpers.withMessage(t('validation.required'), required),
+        required: helpers.withMessage(
+          t('validation.required'),
+          requiredIf(() => !isNBKR.value)
+        ),
       },
       driver: {
         required: helpers.withMessage(t('validation.required'), required),
@@ -265,6 +275,10 @@ const isCurrencyConverter = computed(() => {
   return exchangeRateStore.currentExchangeRate.driver === 'currency_converter'
 })
 
+const isNBKR = computed(() => {
+  return exchangeRateStore.currentExchangeRate.driver === 'nbkr'
+})
+
 const isDedicatedServer = computed(() => {
   return (
     exchangeRateStore.currencyConverter &&
@@ -274,6 +288,9 @@ const isDedicatedServer = computed(() => {
 
 const driverSite = computed(() => {
   switch (exchangeRateStore.currentExchangeRate.driver) {
+    case 'nbkr':
+      return `https://www.nbkr.kg`
+
     case 'currency_converter':
       return `https://www.currencyconverterapi.com`
 
@@ -356,9 +373,25 @@ watch(
   (newVal, oldValue) => {
     if (newVal) {
       fetchServers()
+    } else {
+      // Очищаем currencyConverter при переключении на другой драйвер
+      exchangeRateStore.currencyConverter = {
+        type: '',
+        url: '',
+      }
     }
   },
   { immediate: true }
+)
+
+watch(
+  () => exchangeRateStore.currentExchangeRate.driver,
+  (newVal, oldValue) => {
+    // Для NBKR загружаем валюты сразу при выборе драйвера
+    if (newVal === 'nbkr') {
+      fetchCurrencies()
+    }
+  }
 )
 
 watch(
@@ -401,6 +434,10 @@ async function submitExchangeRate() {
   let data = {
     ...exchangeRateStore.currentExchangeRate,
   }
+  // Для NBKR не требуется ключ
+  if (isNBKR.value) {
+    data.key = 'no-key-required'
+  }
   if (isCurrencyConverter.value) {
     data.driver_config = {
       ...exchangeRateStore.currencyConverter,
@@ -433,11 +470,12 @@ async function fetchServers() {
 
 function fetchCurrencies() {
   const { driver, key } = exchangeRateStore.currentExchangeRate
-  if (driver && key) {
+  // Для NBKR не требуется ключ
+  if (driver && (key || isNBKR.value)) {
     isFetchingCurrencies.value = true
     let data = {
       driver: driver,
-      key: key,
+      key: key || 'no-key-required', // Для NBKR отправляем заглушку
     }
     if (
       isCurrencyConverter.value &&
@@ -446,7 +484,8 @@ function fetchCurrencies() {
       isFetchingCurrencies.value = false
       return
     }
-    if (exchangeRateStore?.currencyConverter?.type) {
+    // Добавляем type только для currency_converter
+    if (isCurrencyConverter.value && exchangeRateStore?.currencyConverter?.type) {
       data.type = exchangeRateStore.currencyConverter.type
     }
 
