@@ -70,8 +70,8 @@ export const useGlobalStore = (useWindow = false) => {
               moduleStore.apiToken = response.data.global_settings.api_token
               moduleStore.enableModules = response.data.modules
 
-                // company store
-                companyStore.companies = response.data.companies
+              // company store
+              companyStore.companies = response.data.companies
               companyStore.selectedCompany = response.data.current_company
               companyStore.setSelectedCompany(response.data.current_company)
               companyStore.selectedCompanySettings =
@@ -79,8 +79,11 @@ export const useGlobalStore = (useWindow = false) => {
               companyStore.selectedCompanyCurrency =
                 response.data.current_company_currency
 
+              // Use user language if set, otherwise fall back to company language
               global.locale =
-                response.data.current_user_settings.language || 'en'
+                response.data.current_user_settings.language ||
+                response.data.current_company_settings.language ||
+                'en'
 
               this.isAppLoaded = true
               resolve(response)

@@ -16,7 +16,12 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libmagickwand-dev \
     libpq-dev \
-    postgresql-client
+    postgresql-client \
+    gnupg
+
+# Install Node.js 18.x
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
