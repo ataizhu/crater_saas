@@ -217,8 +217,8 @@ class Company extends Model implements HasMedia
             'estimate_billing_address_format' => $billingAddressFormat,
             'payment_company_address_format' => $companyAddressFormat,
             'payment_from_customer_address_format' => $paymentFromCustomerAddress,
-            'currency' => request()->currency ?? 13,
-            'time_zone' => 'Asia/Kolkata',
+            'currency' => request()->currency ?? 67, // KGS - Kyrgyzstani som
+            'time_zone' => 'Asia/Bishkek', // Kyrgyzstan timezone
             'language' => 'en',
             'fiscal_year' => '1-12',
             'carbon_date_format' => 'Y/m/d',
