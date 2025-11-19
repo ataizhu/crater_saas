@@ -1,23 +1,45 @@
 # Docker Compose override для dev окружения
 # Используется вместе с docker-compose.yml для dev сервера
-# Команда: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Команда: docker compose -p crater-dev -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+name: crater-dev
 
 services:
   app:
     # Dev использует порт 9001 для PHP-FPM (продакшн использует 9000)
+    # Убираем все порты из основного файла и устанавливаем только для dev
     ports:
       - "9001:9000"  # PHP-FPM порт для внешнего nginx (dev окружение)
     environment:
       - APP_ENV=testing
       - APP_DEBUG=true
+    # Переопределяем имя контейнера, чтобы не конфликтовать с production
+    container_name: crater-dev-app
 
   db:
     # Dev использует порт 54321 для PostgreSQL (продакшн использует 54320)
     ports:
       - '54321:5432'
+    # Используем отдельную БД для dev
+    environment:
+      - POSTGRES_DB=crater_saas_dev
+    # Отдельное имя контейнера
+    container_name: crater-dev-db
+    # Отдельный volume для dev БД
+    volumes:
+      - db-dev:/var/lib/postgresql/data
 
   nginx:
     # Dev использует порт 8080 (продакшн использует 80)
     ports:
       - 8080:80
+    # Отдельное имя контейнера
+    container_name: crater-dev-nginx
+
+  cron:
+    # Отдельное имя контейнера
+    container_name: crater-dev-cron
+
+volumes:
+  db-dev:
 
