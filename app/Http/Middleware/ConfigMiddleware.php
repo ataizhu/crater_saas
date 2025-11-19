@@ -23,7 +23,9 @@ class ConfigMiddleware
             return $next($request);
         }
 
-        if (\Storage::disk('local')->has('database_created')) {
+        $databaseCreatedFlag = storage_path('app/database_created');
+
+        if (file_exists($databaseCreatedFlag)) {
             if ($request->has('file_disk_id')) {
                 $file_disk = FileDisk::find($request->file_disk_id);
             } else {
