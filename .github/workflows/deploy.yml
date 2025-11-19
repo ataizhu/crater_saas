@@ -42,7 +42,7 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          cd /var/www/crater-dev
+          cd /var/www/crater
           git fetch origin
           git reset --hard origin/dev
           docker compose up -d --build
