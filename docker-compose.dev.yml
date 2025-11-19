@@ -1,45 +1,71 @@
-# Docker Compose override для dev окружения
-# Используется вместе с docker-compose.yml для dev сервера
-# Команда: docker compose -p crater-dev -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Docker Compose для dev окружения (полностью отдельный файл)
+# Команда: docker compose -p crater-dev -f docker-compose.dev.yml up -d
 
 name: crater-dev
 
 services:
   app:
-    # Dev использует порт 9001 для PHP-FPM (продакшн использует 9000)
-    # Убираем все порты из основного файла и устанавливаем только для dev
+    build:
+      args:
+        user: crater-user
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: crater-php
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:rw,delegated
     ports:
       - "9001:9000"  # PHP-FPM порт для внешнего nginx (dev окружение)
     environment:
       - APP_ENV=testing
       - APP_DEBUG=true
-    # Переопределяем имя контейнера, чтобы не конфликтовать с production
     container_name: crater-dev-app
+    networks:
+      - crater-dev
 
   db:
-    # Dev использует порт 54321 для PostgreSQL (продакшн использует 54320)
-    ports:
-      - '54321:5432'
-    # Используем отдельную БД для dev
-    environment:
-      - POSTGRES_DB=crater_saas_dev
-    # Отдельное имя контейнера
-    container_name: crater-dev-db
-    # Отдельный volume для dev БД
+    image: postgres:14-alpine
+    restart: always
     volumes:
       - db-dev:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: crater
+      POSTGRES_PASSWORD: crater
+      POSTGRES_DB: crater_saas_dev
+    ports:
+      - '54321:5432'  # Dev PostgreSQL порт
+    container_name: crater-dev-db
+    networks:
+      - crater-dev
 
   nginx:
-    # Dev использует порт 8080 (продакшн использует 80)
+    image: nginx:1.17-alpine
+    restart: unless-stopped
     ports:
-      - 8080:80
-    # Отдельное имя контейнера
+      - 8080:80  # Dev Nginx порт
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
     container_name: crater-dev-nginx
+    networks:
+      - crater-dev
 
   cron:
-    # Отдельное имя контейнера
+    build:
+      context: ./
+      dockerfile: ./docker-compose/cron.dockerfile
+    volumes:
+      - ./:/var/www
     container_name: crater-dev-cron
+    networks:
+      - crater-dev
 
 volumes:
   db-dev:
 
+networks:
+  crater-dev:
+    driver: bridge
