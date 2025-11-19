@@ -18,7 +18,9 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapThree();
         $this->loadJsonTranslationsFrom(resource_path('scripts/locales'));
 
-        if (\Storage::disk('local')->has('database_created') && Schema::hasTable('abilities')) {
+        $databaseCreatedFlag = storage_path('app/database_created');
+        
+        if (file_exists($databaseCreatedFlag) && Schema::hasTable('abilities')) {
             $this->addMenus();
         }
     }
