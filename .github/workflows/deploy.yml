@@ -57,15 +57,15 @@ jobs:
           git reset --hard origin/dev
           echo "Current branch: $(git branch --show-current)"
           echo "Code updated, building containers..."
-          docker compose -p crater-dev -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+          docker compose -p crater-dev -f docker-compose.dev.yml up -d --build
           echo "Installing Composer dependencies..."
-          docker compose -p crater-dev -f docker-compose.yml -f docker-compose.dev.yml exec -u root app composer install --no-dev --optimize-autoloader || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app composer install --no-dev --optimize-autoloader || true
           echo "Running migrations..."
-          docker compose -p crater-dev -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan migrate --force || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan migrate --force || true
           echo "Clearing caches..."
-          docker compose -p crater-dev -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan config:clear || true
-          docker compose -p crater-dev -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan config:cache || true
-          docker compose -p crater-dev -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan route:cache || true
-          docker compose -p crater-dev -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan view:cache || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:clear || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:cache || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan route:cache || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan view:cache || true
           echo "DEV deployment completed successfully!"
 
