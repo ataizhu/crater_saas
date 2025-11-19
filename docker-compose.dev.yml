@@ -1,0 +1,23 @@
+# Docker Compose override для dev окружения
+# Используется вместе с docker-compose.yml для dev сервера
+# Команда: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+services:
+  app:
+    # Dev использует порт 9001 для PHP-FPM (продакшн использует 9000)
+    ports:
+      - "9001:9000"  # PHP-FPM порт для внешнего nginx (dev окружение)
+    environment:
+      - APP_ENV=testing
+      - APP_DEBUG=true
+
+  db:
+    # Dev использует порт 54321 для PostgreSQL (продакшн использует 54320)
+    ports:
+      - '54321:5432'
+
+  nginx:
+    # Dev использует порт 8080 (продакшн использует 80)
+    ports:
+      - 8080:80
+

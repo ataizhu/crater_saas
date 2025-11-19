@@ -20,12 +20,12 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          echo "Starting deployment..."
-          cd /var/www/crater || { echo "Directory not found!"; exit 1; }
+          echo "Starting PRODUCTION deployment..."
+          cd /var/www/crater || { echo "Directory not found! Creating..."; mkdir -p /var/www/crater; cd /var/www/crater; git clone https://github.com/ataizhu/crater_saas.git . || exit 1; }
           echo "Current directory: $(pwd)"
-          echo "Current branch: $(git branch --show-current)"
           git fetch origin
           git reset --hard origin/master
+          echo "Current branch: $(git branch --show-current)"
           echo "Code updated, building containers..."
           docker compose up -d --build
           echo "Running migrations..."
@@ -35,7 +35,7 @@ jobs:
           docker compose exec -u root app php artisan config:cache || true
           docker compose exec -u root app php artisan route:cache || true
           docker compose exec -u root app php artisan view:cache || true
-          echo "Deployment completed successfully!"
+          echo "PRODUCTION deployment completed successfully!"
 
   deploy-dev:
     if: github.ref == 'refs/heads/dev'
@@ -50,20 +50,20 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          echo "Starting deployment..."
-          cd /var/www/crater || { echo "Directory not found!"; exit 1; }
+          echo "Starting DEV deployment..."
+          cd /var/www/crater-dev || { echo "Directory not found! Creating..."; mkdir -p /var/www/crater-dev; cd /var/www/crater-dev; git clone https://github.com/ataizhu/crater_saas.git . || exit 1; }
           echo "Current directory: $(pwd)"
-          echo "Current branch: $(git branch --show-current)"
           git fetch origin
           git reset --hard origin/dev
+          echo "Current branch: $(git branch --show-current)"
           echo "Code updated, building containers..."
-          docker compose up -d --build
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
           echo "Running migrations..."
-          docker compose exec -u root app php artisan migrate --force || true
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan migrate --force || true
           echo "Clearing caches..."
-          docker compose exec -u root app php artisan config:clear || true
-          docker compose exec -u root app php artisan config:cache || true
-          docker compose exec -u root app php artisan route:cache || true
-          docker compose exec -u root app php artisan view:cache || true
-          echo "Deployment completed successfully!"
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan config:clear || true
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan config:cache || true
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan route:cache || true
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan view:cache || true
+          echo "DEV deployment completed successfully!"
 

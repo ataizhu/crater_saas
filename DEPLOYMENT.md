@@ -37,7 +37,11 @@ cat ~/.ssh/github_actions
 
 ## Настройка dev окружения на сервере
 
-### Вариант 1: Отдельная директория
+**Важно:** Dev и Production работают в отдельных директориях:
+- **Production:** `/var/www/crater` (ветка `master`)
+- **Dev:** `/var/www/crater-dev` (ветка `dev`)
+
+### Настройка dev окружения
 
 ```bash
 # Создайте директорию для dev
@@ -45,7 +49,7 @@ mkdir -p /var/www/crater-dev
 cd /var/www/crater-dev
 
 # Клонируйте репозиторий
-git clone git@github.com:ataizhu/crater_saas.git .
+git clone https://github.com/ataizhu/crater_saas.git .
 
 # Переключитесь на dev ветку
 git checkout dev
@@ -54,22 +58,34 @@ git checkout dev
 cp .env.example .env
 # Отредактируйте .env - измените домен на dev.crater.billing.mycloud.kg
 
-# Настройте docker-compose.yml как для продакшн
-# Запустите контейнеры
-docker compose up -d --build
+# Пример .env для dev:
+# APP_ENV=testing
+# APP_DEBUG=true
+# APP_URL=http://dev.crater.billing.mycloud.kg
+# MAIN_DOMAIN=dev.crater.billing.mycloud.kg
+# SESSION_DOMAIN=.dev.crater.billing.mycloud.kg
+
+# Запустите контейнеры с dev конфигурацией
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+# Выполните миграции
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -u root app php artisan migrate --force
+
+# Настройте Nginx для dev домена (если нужен отдельный домен)
+# Или используйте порт 8080: http://crater.billing.mycloud.kg:8080
 ```
 
-### Вариант 2: Тот же проект, другая ветка
+### Различия dev и production
 
-```bash
-cd /var/www/crater
-
-# Создайте отдельный docker-compose для dev
-cp docker-compose.yml docker-compose.dev.yml
-# Измените порты в docker-compose.dev.yml
-
-# При деплое dev будет обновляться та же директория
-```
+| Параметр | Production | Dev |
+|----------|-----------|-----|
+| Директория | `/var/www/crater` | `/var/www/crater-dev` |
+| Ветка Git | `master` | `dev` |
+| PHP-FPM порт | `9000` | `9001` |
+| PostgreSQL порт | `54320` | `54321` |
+| Nginx порт | `80` | `8080` |
+| APP_ENV | `production` | `testing` |
+| APP_DEBUG | `false` | `true` |
 
 ## Workflow
 
