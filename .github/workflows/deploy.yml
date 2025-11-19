@@ -1,0 +1,53 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - master  # Продакшн
+      - dev     # Тестовый сервер
+
+jobs:
+  deploy-production:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    
+    steps:
+    - name: Deploy to production server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd /var/www/crater
+          git fetch origin
+          git reset --hard origin/master
+          docker compose up -d --build
+          docker compose exec -u root app php artisan migrate --force
+          docker compose exec -u root app php artisan config:cache
+          docker compose exec -u root app php artisan route:cache
+          docker compose exec -u root app php artisan view:cache
+
+  deploy-dev:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    name: Deploy to Dev Server
+    
+    steps:
+    - name: Deploy to dev server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd /var/www/crater-dev
+          git fetch origin
+          git reset --hard origin/dev
+          docker compose up -d --build
+          docker compose exec -u root app php artisan migrate --force
+          docker compose exec -u root app php artisan config:cache
+          docker compose exec -u root app php artisan route:cache
+          docker compose exec -u root app php artisan view:cache
+
