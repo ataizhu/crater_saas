@@ -44,12 +44,16 @@ class InitializeTenantCommand extends Command
         $this->info("Creating schema: {$schemaName}");
         DB::statement("CREATE SCHEMA IF NOT EXISTS {$schemaName}");
         
-        // Устанавливаем search_path только на схему тенанта (без public)
+        // Удаляем схему public если она была создана (PostgreSQL может создать её автоматически)
         // Это предотвращает создание таблиц в схеме public
-        DB::statement("SET search_path TO {$schemaName}");
+        DB::statement("DROP SCHEMA IF EXISTS public CASCADE");
         
         // Переключаемся на схему тенанта
         tenancy()->initialize($tenant);
+        
+        // ВАЖНО: После tenancy()->initialize() снова устанавливаем search_path только на схему тенанта
+        // Это гарантирует, что все таблицы создаются в правильной схеме
+        DB::statement("SET search_path TO {$schemaName}");
         
         // Запускаем миграции
         $this->info("Running migrations...");
