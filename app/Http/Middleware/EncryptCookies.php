@@ -34,6 +34,14 @@ class EncryptCookies extends Middleware
         $cookiesBefore = array_keys($request->cookies->all());
         $sessionCookieName = config('session.cookie');
         
+        // Оптимизация: проверяем cookies только если их много (больше 4) или при POST/PUT/PATCH/DELETE
+        $method = $request->getMethod();
+        $shouldCheck = count($cookiesBefore) > 4 || in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE']);
+        
+        if (!$shouldCheck) {
+            return parent::decrypt($request);
+        }
+        
         // Список разрешенных cookie, которые должны оставаться
         $allowedCookies = [
             $sessionCookieName,
@@ -51,17 +59,15 @@ class EncryptCookies extends Middleware
                 $shouldRemove = true;
             }
             
-            // 2. Удаляем cookie с именами, похожими на старые session cookies (начинаются с латинских букв и цифр, 32-40 символов)
+            // 2. Удаляем cookie с именами, похожими на старые session cookies (32-40 символов)
             if (preg_match('/^[a-zA-Z0-9]{32,40}$/', $cookieName) && 
                 !in_array($cookieName, $allowedCookies) &&
                 strpos($cookieName, 'remember_') !== 0) {
                 $shouldRemove = true;
             }
             
-            // 3. Удаляем дубликаты session cookies (если есть несколько crater_session с разными доменами)
-            // Проверяем только если это не текущий session cookie
+            // Пропускаем текущий session cookie
             if ($cookieName === $sessionCookieName) {
-                // Оставляем текущий, но логируем для диагностики
                 continue;
             }
             
@@ -93,6 +99,13 @@ class EncryptCookies extends Middleware
      */
     protected function encrypt($response)
     {
+        // Оптимизация: проверяем cookies в ответе только если их много или это POST/PUT/PATCH/DELETE
+        $cookiesInResponse = $response->headers->getCookies();
+        if (count($cookiesInResponse) <= 2) {
+            // Если cookies мало (обычно только crater_session и XSRF-TOKEN), пропускаем проверку
+            return parent::encrypt($response);
+        }
+        
         $sessionCookieName = config('session.cookie');
         $allowedCookies = [
             $sessionCookieName,
@@ -102,7 +115,7 @@ class EncryptCookies extends Middleware
         $cookiesToRemove = [];
         
         // Удаляем старые/недействительные cookie из ответа автоматически
-        foreach ($response->headers->getCookies() as $cookie) {
+        foreach ($cookiesInResponse as $cookie) {
             $cookieName = $cookie->getName();
             
             // Удаляем cookie, которые похожи на старые session cookies

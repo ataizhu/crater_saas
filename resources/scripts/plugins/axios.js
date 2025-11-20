@@ -13,6 +13,11 @@ axios.defaults.headers.common = {
  * Interceptors
  */
 
+// Флаг для отслеживания, была ли уже выполнена очистка cookies в этой сессии
+let cookiesCleaned = false
+let lastCleanupTime = 0
+const CLEANUP_INTERVAL = 5 * 60 * 1000 // Проверяем не чаще раза в 5 минут
+
 axios.interceptors.request.use(function (config) {
   // Pass selected company to header on all requests
   const companyId = Ls.get('selectedCompany')
@@ -27,8 +32,17 @@ axios.interceptors.request.use(function (config) {
     config.headers.common['company'] = companyId
   }
 
-  // Автоматическая очистка старых cookies перед каждым запросом
-  cleanupOldCookies()
+  // Проверяем cookies только периодически или при первой загрузке
+  const now = Date.now()
+  if (!cookiesCleaned || (now - lastCleanupTime) > CLEANUP_INTERVAL) {
+    // Быстрая проверка: если cookies много (больше 4), выполняем очистку
+    const cookieCount = document.cookie.split(';').filter(c => c.trim()).length
+    if (cookieCount > 4) {
+      cleanupOldCookies()
+      cookiesCleaned = true
+      lastCleanupTime = now
+    }
+  }
 
   // Добавляем CSRF токен для POST/PUT/PATCH/DELETE запросов
   const method = config.method?.toUpperCase()
@@ -55,6 +69,23 @@ axios.interceptors.request.use(function (config) {
 
   return config
 })
+
+// Перехватчик ответов для очистки cookies при CSRF ошибке
+axios.interceptors.response.use(
+  function (response) {
+    return response
+  },
+  function (error) {
+    // Если ошибка CSRF (419), очищаем cookies и пробуем снова
+    if (error.response && error.response.status === 419) {
+      console.warn('CSRF token mismatch detected, cleaning cookies')
+      cleanupOldCookies()
+      cookiesCleaned = true
+      lastCleanupTime = Date.now()
+    }
+    return Promise.reject(error)
+  }
+)
 
 /**
  * Получить значение cookie по имени
