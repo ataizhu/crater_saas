@@ -1,0 +1,92 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - master  # Продакшн
+      - dev     # Тестовый сервер
+
+jobs:
+  deploy-production:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    
+    steps:
+    - name: Deploy to production server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          echo "Starting PRODUCTION deployment..."
+          cd /var/www/crater || { echo "Directory not found! Creating..."; mkdir -p /var/www/crater; cd /var/www/crater; git clone https://github.com/ataizhu/crater_saas.git . || exit 1; }
+          echo "Current directory: $(pwd)"
+          git fetch origin
+          git reset --hard origin/master
+          echo "Current branch: $(git branch --show-current)"
+          echo "Code updated, building containers..."
+          docker compose up -d --build
+          echo "Fixing storage permissions..."
+          docker compose exec -u root app chmod -R 775 /var/www/storage /var/www/bootstrap/cache || true
+          docker compose exec -u root app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
+          echo "Generating application key if not set..."
+          docker compose exec -u root app php artisan key:generate --force || true
+          echo "Running migrations..."
+          docker compose exec -u root app php artisan migrate --force || true
+          echo "Creating test admin user if not exists..."
+          docker compose exec -u root app php artisan admin:create "Admin" "admin@example.com" "testtest" || echo "Admin user may already exist"
+          echo "Clearing caches..."
+          docker compose exec -u root app php artisan config:clear || true
+          docker compose exec -u root app php artisan config:cache || true
+          docker compose exec -u root app php artisan route:cache || true
+          docker compose exec -u root app php artisan view:cache || true
+          echo "PRODUCTION deployment completed successfully!"
+
+  deploy-dev:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    name: Deploy to Dev Server
+    
+    steps:
+    - name: Deploy to dev server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          echo "Starting DEV deployment..."
+          cd /var/www/crater-dev || { echo "Directory not found! Creating..."; mkdir -p /var/www/crater-dev; cd /var/www/crater-dev; git clone https://github.com/ataizhu/crater_saas.git . || exit 1; }
+          echo "Current directory: $(pwd)"
+          git fetch origin
+          git reset --hard origin/dev
+          echo "Current branch: $(git branch --show-current)"
+          echo "Code updated, building containers..."
+          docker compose -p crater-dev -f docker-compose.dev.yml up -d --build
+          echo "Installing Composer dependencies..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app composer install --no-dev --optimize-autoloader || true
+          echo "Fixing storage permissions..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chmod -R 775 /var/www/storage /var/www/bootstrap/cache || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
+          echo "Generating application key if not set..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan key:generate --force || true
+          echo "Clearing config cache before migration..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:clear || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app rm -rf /var/www/bootstrap/cache/*.php || true
+              echo "Creating admin schema if not exists..."
+              docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "CREATE SCHEMA IF NOT EXISTS admin;" || true
+              docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "GRANT ALL ON SCHEMA admin TO crater;" || true
+              docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "ALTER DATABASE crater_saas_dev SET search_path TO admin;" || true
+          echo "Running migrations..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan migrate --force || true
+          echo "Creating test admin user if not exists..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan admin:create "Admin" "admin@example.com" "testtest" || echo "Admin user may already exist"
+          echo "Clearing caches..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:clear || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:cache || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan route:cache || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan view:cache || true
+          echo "DEV deployment completed successfully!"
+

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace Crater\Console\Commands;
 
 use App\Models\AdminUser;
 use Illuminate\Console\Command;
@@ -15,15 +15,24 @@ class CreateAdminUser extends Command
     public function handle()
     {
         try {
+            $email = $this->argument('email');
+            
+            // Проверяем, существует ли пользователь
+            $existing = AdminUser::where('email', $email)->first();
+            if ($existing) {
+                $this->info("Admin user with email {$email} already exists. Skipping creation.");
+                return 0;
+            }
+            
             $admin = AdminUser::create([
                 'name' => $this->argument('name'),
-                'email' => $this->argument('email'),
+                'email' => $email,
                 'password' => Hash::make($this->argument('password')),
             ]);
 
             $this->info("Admin user created successfully!");
             $this->info("Email: {$admin->email}");
-            $this->info("Login at: http://crater.test/admin");
+            $this->info("Login at: " . config('app.url') . '/admin');
             
             return 0;
         } catch (\Exception $e) {

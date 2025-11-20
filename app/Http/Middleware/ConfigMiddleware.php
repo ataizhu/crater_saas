@@ -17,9 +17,15 @@ class ConfigMiddleware
     public function handle($request, Closure $next)
     {
         // Skip for Filament admin panel, assets and Livewire requests
-        if ($request->is('super-admin') || $request->is('super-admin/*') || 
+        if ($request->is('admin') || $request->is('admin/*') || 
             $request->is('filament/*') || $request->is('vendor/livewire/*') ||
             $request->is('livewire/*')) {
+            return $next($request);
+        }
+
+        // FileDisk exists only in tenant schemas, not in central admin schema
+        // Only process this for tenant requests
+        if (!tenancy()->initialized) {
             return $next($request);
         }
 

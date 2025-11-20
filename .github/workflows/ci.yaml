@@ -1,6 +1,9 @@
 name: CI
 
-on: [push, pull_request]
+# Отключено - используем только deploy workflow
+# on: [push, pull_request]
+on:
+  workflow_dispatch:  # Только ручной запуск
 
 jobs:
   build-test:

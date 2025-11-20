@@ -1,0 +1,71 @@
+# Docker Compose для dev окружения (полностью отдельный файл)
+# Команда: docker compose -p crater-dev -f docker-compose.dev.yml up -d
+
+name: crater-dev
+
+services:
+  app:
+    build:
+      args:
+        user: crater-user
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: crater-php
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:rw,delegated
+    ports:
+      - "9001:9000"  # PHP-FPM порт для внешнего nginx (dev окружение)
+    environment:
+      - APP_ENV=testing
+      - APP_DEBUG=true
+    container_name: crater-dev-app
+    networks:
+      - crater-dev
+
+  db:
+    image: postgres:14-alpine
+    restart: always
+    volumes:
+      - db-dev:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: crater
+      POSTGRES_PASSWORD: crater
+      POSTGRES_DB: crater_saas_dev
+    ports:
+      - '54321:5432'  # Dev PostgreSQL порт
+    container_name: crater-dev-db
+    networks:
+      - crater-dev
+
+  nginx:
+    image: nginx:1.17-alpine
+    restart: unless-stopped
+    ports:
+      - 8080:80  # Dev Nginx порт
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    container_name: crater-dev-nginx
+    networks:
+      - crater-dev
+
+  cron:
+    build:
+      context: ./
+      dockerfile: ./docker-compose/cron.dockerfile
+    volumes:
+      - ./:/var/www
+    container_name: crater-dev-cron
+    networks:
+      - crater-dev
+
+volumes:
+  db-dev:
+
+networks:
+  crater-dev:
+    driver: bridge

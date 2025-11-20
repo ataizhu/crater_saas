@@ -25,7 +25,7 @@ return [
     |
     */
 
-    'path' => env('FILAMENT_PATH', 'super-admin'),
+    'path' => env('FILAMENT_PATH', 'admin'),
 
     /*
     |--------------------------------------------------------------------------
@@ -86,8 +86,9 @@ return [
 
     'auth' => [
         'guard' => env('FILAMENT_AUTH_GUARD', 'admin'),
+        'user_model' => \App\Models\AdminUser::class,
         'pages' => [
-            'login' => \Filament\Http\Livewire\Auth\Login::class,
+            'login' => \App\Filament\Pages\Auth\Login::class,
         ],
     ],
 

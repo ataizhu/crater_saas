@@ -41,7 +41,7 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            EnsureFrontendRequestsAreStateful::class,
+            EnsureFrontendRequestsAreStateful::class, // ВАЖНО: Первым! Он сам добавит нужные middleware для stateful запросов
             'throttle:180,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],

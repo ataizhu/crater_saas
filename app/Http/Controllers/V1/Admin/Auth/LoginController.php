@@ -37,4 +37,21 @@ class LoginController extends Controller
     {
         $this->middleware('guest')->except('logout');
     }
+
+    /**
+     * The user has been authenticated.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  mixed  $user
+     * @return mixed
+     */
+    protected function authenticated(\Illuminate\Http\Request $request, $user)
+    {
+        // Для SPA возвращаем JSON вместо редиректа
+        $response = $request->expectsJson() 
+            ? response()->json(['success' => true, 'user' => $user])
+            : redirect()->intended($this->redirectPath());
+        
+        return $response;
+    }
 }

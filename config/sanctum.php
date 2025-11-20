@@ -20,8 +20,12 @@ return [
             '127.0.0.1',
             '127.0.0.1:8000',
             '::1',
-            'crater.test', // Central domain
-            '*.crater.test', // Wildcard for all tenant subdomains
+            'crater.test', // Central domain (local)
+            '*.crater.test', // Wildcard for all tenant subdomains (local)
+            'crater.billing.mycloud.kg', // Production central domain
+            '*.crater.billing.mycloud.kg', // Production tenant subdomains
+            'dev.crater.billing.mycloud.kg', // Dev central domain
+            '*.dev.crater.billing.mycloud.kg', // Dev tenant subdomains
         ]))
     )),
 
