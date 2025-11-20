@@ -34,23 +34,49 @@ class EncryptCookies extends Middleware
         $cookiesBefore = array_keys($request->cookies->all());
         $sessionCookieName = config('session.cookie');
         
-        // Удаляем старые cookie с именами = session_id (они не нужны)
-        // Эти cookie могли быть созданы ранее из-за багов
+        // Список разрешенных cookie, которые должны оставаться
+        $allowedCookies = [
+            $sessionCookieName,
+            'XSRF-TOKEN',
+            'remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d', // Laravel remember token (пример)
+        ];
+        
+        // Удаляем старые/недействительные cookie автоматически
         $cookiesToRemove = [];
         foreach ($cookiesBefore as $cookieName) {
-            // Если это не стандартные cookie и не XSRF-TOKEN, и имя похоже на session_id (40 символов)
-            if ($cookieName !== $sessionCookieName && 
-                $cookieName !== 'XSRF-TOKEN' && 
-                strlen($cookieName) === 40) {
+            $shouldRemove = false;
+            
+            // 1. Удаляем cookie, которые похожи на session_id (40 символов, не разрешенные)
+            if (strlen($cookieName) === 40 && !in_array($cookieName, $allowedCookies)) {
+                $shouldRemove = true;
+            }
+            
+            // 2. Удаляем cookie с именами, похожими на старые session cookies (начинаются с латинских букв и цифр, 32-40 символов)
+            if (preg_match('/^[a-zA-Z0-9]{32,40}$/', $cookieName) && 
+                !in_array($cookieName, $allowedCookies) &&
+                strpos($cookieName, 'remember_') !== 0) {
+                $shouldRemove = true;
+            }
+            
+            // 3. Удаляем дубликаты session cookies (если есть несколько crater_session с разными доменами)
+            // Проверяем только если это не текущий session cookie
+            if ($cookieName === $sessionCookieName) {
+                // Оставляем текущий, но логируем для диагностики
+                continue;
+            }
+            
+            if ($shouldRemove) {
                 $cookiesToRemove[] = $cookieName;
                 $request->cookies->remove($cookieName);
             }
         }
         
         if (!empty($cookiesToRemove)) {
-            \Log::warning('EncryptCookies: Removing old session_id cookies', [
+            \Log::info('EncryptCookies: Automatically removing invalid/old cookies', [
                 'removed_cookies' => $cookiesToRemove,
                 'session_cookie_name' => $sessionCookieName,
+                'total_cookies_before' => count($cookiesBefore),
+                'total_cookies_after' => count($cookiesBefore) - count($cookiesToRemove),
             ]);
         }
         
@@ -68,31 +94,37 @@ class EncryptCookies extends Middleware
     protected function encrypt($response)
     {
         $sessionCookieName = config('session.cookie');
-        $cookiesBefore = [];
+        $allowedCookies = [
+            $sessionCookieName,
+            'XSRF-TOKEN',
+        ];
+        
         $cookiesToRemove = [];
         
-        // Логируем cookie ДО обработки
+        // Удаляем старые/недействительные cookie из ответа автоматически
         foreach ($response->headers->getCookies() as $cookie) {
             $cookieName = $cookie->getName();
-            $cookiesBefore[] = $cookieName;
             
-            // Если это не стандартные cookie и не XSRF-TOKEN, и имя похоже на session_id (40 символов)
-            // И имя НЕ равно session_cookie_name (crater_session)
-            if ($cookieName !== $sessionCookieName && 
-                $cookieName !== 'XSRF-TOKEN' && 
-                strlen($cookieName) === 40 &&
-                preg_match('/^[a-zA-Z0-9]{40}$/', $cookieName)) {
+            // Удаляем cookie, которые похожи на старые session cookies
+            if (!in_array($cookieName, $allowedCookies) &&
+                preg_match('/^[a-zA-Z0-9]{32,40}$/', $cookieName) &&
+                strpos($cookieName, 'remember_') !== 0) {
                 $cookiesToRemove[] = $cookieName;
+                // Устанавливаем cookie с истекшим сроком для всех возможных доменов
+                $domains = array_filter([
+                    config('session.domain'),
+                    '.' . parse_url(config('app.url'), PHP_URL_HOST),
+                ]);
+                foreach (array_unique($domains) as $domain) {
+                    if ($domain) {
+                        $response->headers->removeCookie($cookieName, '/', $domain);
+                    }
+                }
             }
         }
         
-        // Удаляем старые cookie из ответа
-        foreach ($cookiesToRemove as $cookieName) {
-            $response->headers->removeCookie($cookieName);
-        }
-        
         if (!empty($cookiesToRemove)) {
-            \Log::warning('EncryptCookies: Removing old session_id cookies from response', [
+            \Log::info('EncryptCookies: Automatically removing invalid cookies from response', [
                 'removed_cookies' => $cookiesToRemove,
                 'session_cookie_name' => $sessionCookieName,
             ]);

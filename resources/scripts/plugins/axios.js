@@ -27,6 +27,9 @@ axios.interceptors.request.use(function (config) {
     config.headers.common['company'] = companyId
   }
 
+  // Автоматическая очистка старых cookies перед каждым запросом
+  cleanupOldCookies()
+
   // Добавляем CSRF токен для POST/PUT/PATCH/DELETE запросов
   const method = config.method?.toUpperCase()
   if (method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -44,6 +47,9 @@ axios.interceptors.request.use(function (config) {
     if (csrfToken) {
       // Добавляем в заголовок X-XSRF-TOKEN (стандартная практика для SPA)
       config.headers.common['X-XSRF-TOKEN'] = csrfToken
+    } else {
+      // Если токен отсутствует, пытаемся получить его с сервера
+      console.warn('CSRF token not found, request might fail')
     }
   }
 
@@ -62,4 +68,50 @@ function getCookie(name) {
     return parts.pop().split(';').shift()
   }
   return null
+}
+
+/**
+ * Автоматическая очистка старых/недействительных cookies
+ */
+function cleanupOldCookies() {
+  const allowedCookies = ['crater_session', 'XSRF-TOKEN']
+  const cookies = document.cookie.split(';')
+  const domain = window.location.hostname
+  const domainParts = domain.split('.')
+
+  // Получаем базовый домен (например, crater.test из test.crater.test)
+  const baseDomain = domainParts.length > 1
+    ? '.' + domainParts.slice(-2).join('.')
+    : domain
+
+  let cleaned = false
+
+  cookies.forEach((cookie) => {
+    const cookieName = cookie.split('=')[0].trim()
+
+    // Удаляем старые cookies, которые похожи на session_id (32-40 символов)
+    if (!allowedCookies.includes(cookieName) &&
+      /^[a-zA-Z0-9]{32,40}$/.test(cookieName) &&
+      !cookieName.startsWith('remember_')) {
+      // Удаляем для текущего домена
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`
+
+      // Удаляем для базового домена (с точкой)
+      if (baseDomain.startsWith('.')) {
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${baseDomain}`
+      }
+
+      cleaned = true
+    }
+  })
+
+  if (cleaned) {
+    console.log('Cleaned up old cookies automatically')
+  }
+}
+
+// Очищаем старые cookies при загрузке страницы
+if (typeof window !== 'undefined') {
+  // Выполняем очистку после небольшой задержки, чтобы не мешать загрузке
+  setTimeout(cleanupOldCookies, 100)
 }
