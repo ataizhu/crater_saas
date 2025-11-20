@@ -88,54 +88,29 @@ class VerifyCsrfToken extends Middleware
      */
     protected function getTokenFromRequest($request)
     {
-        // Приоритет: X-XSRF-TOKEN (для Livewire/Filament), затем X-CSRF-TOKEN, затем _token input
+        // Используем стандартный метод Laravel для получения токена
+        // Он автоматически обрабатывает X-XSRF-TOKEN, X-CSRF-TOKEN и _token
         
-        // 1. Проверяем X-XSRF-TOKEN заголовок (используется Livewire)
-        if ($header = $request->header('X-XSRF-TOKEN')) {
-            try {
-                // Laravel автоматически обрабатывает X-XSRF-TOKEN заголовок
-                // Если XSRF-TOKEN cookie зашифрован, Laravel расшифрует его с помощью CookieValuePrefix
-                $token = \Illuminate\Cookie\CookieValuePrefix::remove(
-                    $this->encrypter->decrypt($header, static::serialized())
-                );
-                if ($token) {
-                    return $token;
-                }
-            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                // Если расшифровка не удалась, возможно cookie не был зашифрован
-                // Используем значение как есть (для незашифрованных cookie)
-                if ($header) {
-                    // Livewire может отправлять незашифрованный токен
-                    return $header;
-                }
+        // Laravel автоматически обрабатывает:
+        // 1. X-XSRF-TOKEN заголовок (читает из cookie XSRF-TOKEN)
+        // 2. X-CSRF-TOKEN заголовок
+        // 3. _token input
+        
+        // Вызываем родительский метод, который правильно обрабатывает все случаи
+        $token = parent::getTokenFromRequest($request);
+        
+        // Если родительский метод не нашел токен, пробуем альтернативные способы
+        if (!$token) {
+            // Проверяем заголовки напрямую (без расшифровки, для отладки)
+            if ($header = $request->header('X-XSRF-TOKEN')) {
+                $token = $header;
+            } elseif ($header = $request->header('X-CSRF-TOKEN')) {
+                $token = $header;
+            } elseif ($input = $request->input('_token')) {
+                $token = $input;
             }
         }
-
-        // 2. Проверяем X-CSRF-TOKEN заголовок (может быть отправлен Livewire)
-        if ($header = $request->header('X-CSRF-TOKEN')) {
-            // X-CSRF-TOKEN может быть зашифрован или нет
-            try {
-                // Пытаемся расшифровать (если зашифрован)
-                $token = \Illuminate\Cookie\CookieValuePrefix::remove(
-                    $this->encrypter->decrypt($header, static::serialized())
-                );
-                if ($token) {
-                    return $token;
-                }
-            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                // Если расшифровка не удалась, используем как есть
-                if ($header) {
-                    return $header;
-                }
-            }
-        }
-
-        // 3. Проверяем _token input (для форм)
-        $token = $request->input('_token');
-        if ($token) {
-            return $token;
-        }
-
-        return null;
+        
+        return $token;
     }
 }
