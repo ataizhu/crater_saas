@@ -27,6 +27,11 @@ class BootstrapController extends Controller
     public function __invoke(Request $request)
     {
         $current_user = $request->user();
+        
+        if (!$current_user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+        
         $current_user_settings = $current_user->getAllSettings();
 
         $main_menu = $this->generateMenu('main_menu', $current_user);
@@ -39,6 +44,10 @@ class BootstrapController extends Controller
 
         if ((! $current_company) || ($current_company && ! $current_user->hasCompany($current_company->id))) {
             $current_company = $current_user->companies()->first();
+        }
+
+        if (!$current_company) {
+            return response()->json(['error' => 'No company found for user'], 500);
         }
 
         $current_company_settings = CompanySetting::getAllSettings($current_company->id);

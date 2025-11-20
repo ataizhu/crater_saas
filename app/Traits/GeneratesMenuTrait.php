@@ -8,7 +8,14 @@ trait GeneratesMenuTrait
     {
         $menu = [];
 
-        foreach (\Menu::get($key)->items->toArray() as $data) {
+        $menuObj = \Menu::get($key);
+        
+        // Проверяем, что меню существует и имеет items
+        if (!$menuObj || !$menuObj->items) {
+            return $menu;
+        }
+
+        foreach ($menuObj->items->toArray() as $data) {
             if ($user->checkAccess($data)) {
                 $menu[] = [
                     'title' => $data->title,
