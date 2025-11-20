@@ -46,7 +46,28 @@ class VerifyCsrfToken extends Middleware
         $token = $this->getTokenFromRequest($request);
         $sessionToken = $request->session()->token();
 
-        return hash_equals($sessionToken, $token);
+        $match = hash_equals($sessionToken, $token);
+
+        // Логирование для диагностики CSRF проблем на production
+        if (!$match && config('app.debug', false) || env('LOG_CSRF_FAILURES', false)) {
+            \Log::warning('CSRF token mismatch', [
+                'uri' => $request->getUri(),
+                'method' => $request->getMethod(),
+                'has_token' => !empty($token),
+                'token_length' => $token ? strlen($token) : 0,
+                'has_session_token' => !empty($sessionToken),
+                'session_token_length' => $sessionToken ? strlen($sessionToken) : 0,
+                'session_id' => $request->session()->getId(),
+                'has_x_xsrf_token' => $request->hasHeader('X-XSRF-TOKEN'),
+                'has_x_csrf_token' => $request->hasHeader('X-CSRF-TOKEN'),
+                'has_token_input' => $request->has('_token'),
+                'host' => $request->getHost(),
+                'referer' => $request->header('referer'),
+                'origin' => $request->header('origin'),
+            ]);
+        }
+
+        return $match;
     }
 
     /**
