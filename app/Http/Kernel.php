@@ -38,6 +38,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \Crater\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \Crater\Http\Middleware\LogResponseCookies::class, // Логирование cookie для диагностики
         ],
 
         'api' => [
@@ -49,6 +50,7 @@ class Kernel extends HttpKernel
             \Crater\Http\Middleware\VerifyCsrfToken::class, // CSRF для stateful API (SPA)
             'throttle:180,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \Crater\Http\Middleware\LogResponseCookies::class, // Логирование cookie для диагностики
         ],
     ];
 
