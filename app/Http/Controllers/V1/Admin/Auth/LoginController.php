@@ -37,4 +37,36 @@ class LoginController extends Controller
     {
         $this->middleware('guest')->except('logout');
     }
+
+    /**
+     * The user has been authenticated.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  mixed  $user
+     * @return mixed
+     */
+    protected function authenticated(\Illuminate\Http\Request $request, $user)
+    {
+        \Log::info('LoginController: User authenticated', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'guard' => 'web',
+            'session_id' => $request->session()->getId(),
+            'session_started' => $request->session()->isStarted(),
+            'authenticated_web' => \Auth::guard('web')->check(),
+            'authenticated_sanctum' => \Auth::guard('sanctum')->check(),
+            'host' => $request->getHost(),
+            'tenancy_initialized' => tenancy()->initialized,
+        ]);
+
+        // Для SPA возвращаем JSON вместо редиректа
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'user' => $user,
+            ]);
+        }
+
+        return redirect()->intended($this->redirectPath());
+    }
 }
