@@ -41,17 +41,14 @@ class RenamePublicToAdminSchema extends Migration
             $pdo->exec("GRANT ALL ON SCHEMA admin TO {$username}");
         }
 
-        // Создаем public схему обратно (PostgreSQL требует)
-        if (!$publicExists) {
-            $pdo->exec('CREATE SCHEMA IF NOT EXISTS public');
-            $pdo->exec("GRANT ALL ON SCHEMA public TO {$username}");
-        }
+        // НЕ создаем public схему - используем только admin
+        // PostgreSQL может автоматически создать public, но мы её не используем
+        
+        // Обновляем search_path для базы данных (только admin, без public)
+        $pdo->exec("ALTER DATABASE {$databaseName} SET search_path TO admin");
 
-        // Обновляем search_path для базы данных
-        $pdo->exec("ALTER DATABASE {$databaseName} SET search_path TO admin, public");
-
-        // Устанавливаем search_path для текущей сессии
-        $pdo->exec('SET search_path TO admin, public');
+        // Устанавливаем search_path для текущей сессии (только admin)
+        $pdo->exec('SET search_path TO admin');
 
         // Создаем таблицу tenants
         if (!Schema::hasTable('tenants')) {

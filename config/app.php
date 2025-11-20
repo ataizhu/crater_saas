@@ -182,6 +182,7 @@ return [
         Crater\Providers\DropboxServiceProvider::class,
         Crater\Providers\ViewServiceProvider::class,
         App\Providers\TenancyServiceProvider::class,
+        App\Providers\Filament\AdminPanelProvider::class,
         // Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class, // Отключен для продакшн
     ],
 

@@ -11,6 +11,13 @@ class AdminUser extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'admin_users';
+
     protected $fillable = [
         'name',
         'email',
