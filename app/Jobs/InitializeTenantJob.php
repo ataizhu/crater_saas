@@ -43,6 +43,10 @@ class InitializeTenantJob
             \Log::info("Creating schema: {$schemaName}");
             DB::statement("CREATE SCHEMA IF NOT EXISTS {$schemaName}");
             
+            // Устанавливаем search_path только на схему тенанта (без public)
+            // Это предотвращает создание таблиц в схеме public
+            DB::statement("SET search_path TO {$schemaName}");
+            
             // Переключаемся на схему тенанта
             tenancy()->initialize($this->tenant);
 
