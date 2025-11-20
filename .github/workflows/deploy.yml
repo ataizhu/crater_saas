@@ -80,11 +80,23 @@ jobs:
           echo "Fixing permissions again after migrations..."
           docker compose exec -u root app chmod -R 775 /var/www/storage /var/www/bootstrap/cache || true
           docker compose exec -u root app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
+          echo "Fixing permissions before clearing caches..."
+          docker compose exec -u root app chmod -R 775 /var/www/storage /var/www/bootstrap/cache || true
+          docker compose exec -u root app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
+          echo "Removing cache files manually..."
+          docker compose exec -u root app rm -rf /var/www/bootstrap/cache/*.php || true
+          docker compose exec -u root app rm -rf /var/www/storage/framework/cache/* || true
+          docker compose exec -u root app rm -rf /var/www/storage/framework/views/* || true
+          echo "Clearing database cache if exists..."
+          docker compose exec db psql -U crater -d crater_saas -c "SET search_path TO admin; TRUNCATE TABLE cache; TRUNCATE TABLE cache_locks;" || true
           echo "Clearing all caches..."
           docker compose exec -u root app php artisan config:clear || true
           docker compose exec -u root app php artisan cache:clear || true
           docker compose exec -u root app php artisan route:clear || true
           docker compose exec -u root app php artisan view:clear || true
+          echo "Fixing permissions after clearing caches..."
+          docker compose exec -u root app chmod -R 775 /var/www/storage /var/www/bootstrap/cache || true
+          docker compose exec -u root app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
           echo "Clearing Opcache by restarting PHP-FPM..."
           docker compose restart app || true
           echo "PRODUCTION deployment completed successfully!"
