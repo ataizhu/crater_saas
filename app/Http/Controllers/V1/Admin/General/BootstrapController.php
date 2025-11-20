@@ -29,8 +29,8 @@ class BootstrapController extends Controller
         // Логируем для диагностики
         \Log::info('BootstrapController: Request received', [
             'host' => $request->getHost(),
-            'session_id' => $request->session()->getId(),
-            'has_session' => $request->session()->exists(),
+            'session_id' => $request->hasSession() ? $request->session()->getId() : null,
+            'has_session' => $request->hasSession() && $request->session()->isStarted(),
             'auth_guard_web' => \Auth::guard('web')->check(),
             'auth_guard_web_user' => \Auth::guard('web')->user() ? \Auth::guard('web')->user()->id : null,
             'auth_guard_sanctum' => \Auth::guard('sanctum')->check(),
