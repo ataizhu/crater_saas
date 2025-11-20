@@ -44,6 +44,7 @@ class Kernel extends HttpKernel
             \Crater\Http\Middleware\EncryptCookies::class, // Для CSRF cookie
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class, // Для CSRF cookie
             \Illuminate\Session\Middleware\StartSession::class, // Для CSRF token в сессии
+            \Crater\Http\Middleware\LogSanctumState::class, // Логирование для диагностики
             EnsureFrontendRequestsAreStateful::class,
             \Crater\Http\Middleware\VerifyCsrfToken::class, // CSRF для stateful API (SPA)
             'throttle:180,1',
