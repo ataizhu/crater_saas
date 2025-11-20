@@ -19,6 +19,18 @@ class VerifyCsrfToken extends Middleware
      * @var array
      */
     protected $except = [
+        // Web routes
         'login',
+        'auth/logout',
+        
+        // API routes (для stateful SPA)
+        'api/v1/auth/login',
+        'api/v1/auth/logout',
+        'api/v1/auth/password/email',
+        'api/v1/auth/reset/password',
+        
+        // Customer auth routes
+        'api/v1/*/customer/auth/password/email',
+        'api/v1/*/customer/auth/reset/password',
     ];
 }

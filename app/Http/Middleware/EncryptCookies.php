@@ -19,6 +19,6 @@ class EncryptCookies extends Middleware
      * @var array
      */
     protected $except = [
-        //
+        'XSRF-TOKEN', // Laravel автоматически расшифровывает этот cookie для CSRF
     ];
 }
