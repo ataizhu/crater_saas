@@ -31,15 +31,6 @@ class LogResponseCookies
             ];
         }
         
-        // Также проверяем Set-Cookie заголовки напрямую
-        // getAll() возвращает массив всех значений заголовка
-        $setCookieHeaders = $response->headers->get('Set-Cookie', null, false);
-        if ($setCookieHeaders === null) {
-            $setCookieHeaders = [];
-        } elseif (!is_array($setCookieHeaders)) {
-            $setCookieHeaders = [$setCookieHeaders];
-        }
-        
         // Безопасно проверяем статус сессии
         $sessionId = null;
         $sessionIsDirty = false;
@@ -58,8 +49,6 @@ class LogResponseCookies
         \Log::info('LogResponseCookies: Response cookies', [
             'cookies' => $cookies,
             'cookie_count' => count($cookies),
-            'set_cookie_headers' => $setCookieHeaders,
-            'set_cookie_count' => count($setCookieHeaders),
             'request_uri' => $request->getRequestUri(),
             'session_cookie_name' => config('session.cookie'),
             'session_id' => $sessionId,
