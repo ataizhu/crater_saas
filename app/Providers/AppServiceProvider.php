@@ -34,6 +34,14 @@ class AppServiceProvider extends ServiceProvider
                 'tenant_id' => tenant('id'),
             ]);
             
+            // Если таблица abilities существует, но файл database_created отсутствует,
+            // создаем его (тенант был инициализирован, но файл потерян)
+            if ($hasAbilitiesTable && !$hasDatabaseCreated) {
+                \Log::info('AppServiceProvider: Creating missing database_created file');
+                \Storage::disk('local')->put('database_created', now());
+                $hasDatabaseCreated = true;
+            }
+            
             if ($hasDatabaseCreated && $hasAbilitiesTable) {
                 $this->addMenus();
                 \Log::info('AppServiceProvider: Menus created successfully');
