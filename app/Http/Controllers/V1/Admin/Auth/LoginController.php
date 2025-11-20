@@ -61,18 +61,14 @@ class LoginController extends Controller
             'session_cookie_name' => config('session.cookie'),
         ]);
 
-        // ВАЖНО: Принудительно сохраняем сессию, чтобы cookie установились
-        // Это гарантирует, что StartSession middleware добавит cookie в ответ
-        $request->session()->save();
-
+        // ВАЖНО: Помечаем сессию как измененную, чтобы StartSession middleware установил cookie
+        // Простое сохранение может не сработать, нужно явно изменить данные сессии
+        $request->session()->put('_last_activity', now()->timestamp);
+        
         // Для SPA возвращаем JSON вместо редиректа
         $response = $request->expectsJson() 
             ? response()->json(['success' => true, 'user' => $user])
             : redirect()->intended($this->redirectPath());
-        
-        // После создания ответа проверяем, что cookie будут установлены
-        // Laravel добавляет cookie через AddQueuedCookiesToResponse middleware
-        // Мы не можем проверить их здесь, так как middleware еще не отработал
         
         return $response;
     }

@@ -31,12 +31,21 @@ class LogResponseCookies
             ];
         }
         
+        // Также проверяем Set-Cookie заголовки напрямую
+        $setCookieHeaders = $response->headers->get('Set-Cookie', []);
+        if (!is_array($setCookieHeaders)) {
+            $setCookieHeaders = [$setCookieHeaders];
+        }
+        
         \Log::info('LogResponseCookies: Response cookies', [
             'cookies' => $cookies,
             'cookie_count' => count($cookies),
+            'set_cookie_headers' => $setCookieHeaders,
+            'set_cookie_count' => count($setCookieHeaders),
             'request_uri' => $request->getRequestUri(),
             'session_cookie_name' => config('session.cookie'),
             'session_id' => $request->hasSession() ? $request->session()->getId() : null,
+            'session_is_dirty' => $request->hasSession() ? $request->session()->isDirty() : false,
         ]);
         
         return $response;
