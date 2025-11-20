@@ -32,8 +32,8 @@ class LogResponseCookies
         }
         
         // Также проверяем Set-Cookie заголовки напрямую
-        // get() возвращает строку или null, getAll() возвращает массив
-        $setCookieHeaders = $response->headers->get('Set-Cookie');
+        // getAll() возвращает массив всех значений заголовка
+        $setCookieHeaders = $response->headers->get('Set-Cookie', null, false);
         if ($setCookieHeaders === null) {
             $setCookieHeaders = [];
         } elseif (!is_array($setCookieHeaders)) {
