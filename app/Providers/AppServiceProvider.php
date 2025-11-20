@@ -37,9 +37,23 @@ class AppServiceProvider extends ServiceProvider
             // Если таблица abilities существует, но файл database_created отсутствует,
             // создаем его (тенант был инициализирован, но файл потерян)
             if ($hasAbilitiesTable && !$hasDatabaseCreated) {
-                \Log::info('AppServiceProvider: Creating missing database_created file');
-                \Storage::disk('local')->put('database_created', now());
-                $hasDatabaseCreated = true;
+                \Log::info('AppServiceProvider: Creating missing database_created file', [
+                    'storage_path' => storage_path('app'),
+                    'tenant_id' => tenant('id'),
+                ]);
+                try {
+                    \Storage::disk('local')->put('database_created', now());
+                    $hasDatabaseCreated = \Storage::disk('local')->has('database_created');
+                    \Log::info('AppServiceProvider: database_created file created', [
+                        'file_exists' => $hasDatabaseCreated,
+                        'storage_path' => storage_path('app'),
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('AppServiceProvider: Failed to create database_created file', [
+                        'error' => $e->getMessage(),
+                        'storage_path' => storage_path('app'),
+                    ]);
+                }
             }
             
             if ($hasDatabaseCreated && $hasAbilitiesTable) {
