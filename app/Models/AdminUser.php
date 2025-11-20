@@ -16,7 +16,7 @@ class AdminUser extends Authenticatable implements FilamentUser
      *
      * @var string
      */
-    protected $table = 'admin_users';
+    protected $table = 'users';
 
     protected $fillable = [
         'name',

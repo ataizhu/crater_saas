@@ -74,9 +74,10 @@ class RenamePublicToAdminSchema extends Migration
             });
         }
 
-        // Создаем таблицу admin_users
-        if (!Schema::hasTable('admin_users')) {
-            Schema::create('admin_users', function (Blueprint $table) {
+        // Создаем таблицу users (для админов в схеме admin)
+        // В схемах тенантов тоже будет таблица users, но они изолированы
+        if (!Schema::hasTable('users')) {
+            Schema::create('users', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');
                 $table->string('email')->unique();
@@ -138,25 +139,25 @@ class RenamePublicToAdminSchema extends Migration
         // Удаляем старые записи о миграциях админки из таблицы migrations
         // (так как теперь все в одной миграции)
         if (Schema::hasTable('migrations')) {
-            DB::table('migrations')
-                ->whereIn('migration', [
-                    '2019_09_15_000010_create_tenants_table',
-                    '2019_09_15_000020_create_domains_table',
-                    '2025_10_26_121223_create_admin_users_table',
-                    '2025_11_10_061713_create_cache_table',
-                    '2025_11_20_072712_rename_public_schema_to_admin_and_cleanup_central_tables'
-                ])
-                ->delete();
-            
-            // Также удаляем записи о tenant миграциях, которые попали в admin схему
-            DB::table('migrations')
-                ->where('migration', 'NOT LIKE', '%tenants%')
-                ->where('migration', 'NOT LIKE', '%domains%')
-                ->where('migration', 'NOT LIKE', '%admin_users%')
-                ->where('migration', 'NOT LIKE', '%cache%')
-                ->where('migration', 'NOT LIKE', '%personal_access_tokens%')
-                ->where('migration', 'LIKE', '%create_%')
-                ->delete();
+                DB::table('migrations')
+                    ->whereIn('migration', [
+                        '2019_09_15_000010_create_tenants_table',
+                        '2019_09_15_000020_create_domains_table',
+                        '2025_10_26_121223_create_admin_users_table',
+                        '2025_11_10_061713_create_cache_table',
+                        '2025_11_20_072712_rename_public_schema_to_admin_and_cleanup_central_tables'
+                    ])
+                    ->delete();
+                
+                // Также удаляем записи о tenant миграциях, которые попали в admin схему
+                DB::table('migrations')
+                    ->where('migration', 'NOT LIKE', '%tenants%')
+                    ->where('migration', 'NOT LIKE', '%domains%')
+                    ->where('migration', 'NOT LIKE', '%users%') // Обновлено: теперь users вместо admin_users
+                    ->where('migration', 'NOT LIKE', '%cache%')
+                    ->where('migration', 'NOT LIKE', '%personal_access_tokens%')
+                    ->where('migration', 'LIKE', '%create_%')
+                    ->delete();
         }
     }
 
