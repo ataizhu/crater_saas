@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace Crater\Console\Commands;
 
 use App\Models\AdminUser;
 use Illuminate\Console\Command;
