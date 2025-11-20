@@ -105,15 +105,29 @@ class VerifyCsrfToken extends Middleware
                 // Если расшифровка не удалась, возможно cookie не был зашифрован
                 // Используем значение как есть (для незашифрованных cookie)
                 if ($header) {
+                    // Livewire может отправлять незашифрованный токен
                     return $header;
                 }
             }
         }
 
-        // 2. Проверяем X-CSRF-TOKEN заголовок (для API запросов)
-        $token = $request->header('X-CSRF-TOKEN');
-        if ($token) {
-            return $token;
+        // 2. Проверяем X-CSRF-TOKEN заголовок (может быть отправлен Livewire)
+        if ($header = $request->header('X-CSRF-TOKEN')) {
+            // X-CSRF-TOKEN может быть зашифрован или нет
+            try {
+                // Пытаемся расшифровать (если зашифрован)
+                $token = \Illuminate\Cookie\CookieValuePrefix::remove(
+                    $this->encrypter->decrypt($header, static::serialized())
+                );
+                if ($token) {
+                    return $token;
+                }
+            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+                // Если расшифровка не удалась, используем как есть
+                if ($header) {
+                    return $header;
+                }
+            }
         }
 
         // 3. Проверяем _token input (для форм)
