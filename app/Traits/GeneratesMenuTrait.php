@@ -10,8 +10,18 @@ trait GeneratesMenuTrait
 
         $menuObj = \Menu::get($key);
         
+        \Log::info("GeneratesMenuTrait: Getting menu '{$key}'", [
+            'menu_exists' => $menuObj !== null,
+            'has_items' => $menuObj && $menuObj->items ? true : false,
+            'items_count' => $menuObj && $menuObj->items ? $menuObj->items->count() : 0,
+        ]);
+        
         // Проверяем, что меню существует и имеет items
         if (!$menuObj || !$menuObj->items) {
+            \Log::warning("GeneratesMenuTrait: Menu '{$key}' not found or empty", [
+                'menu_obj' => $menuObj ? 'exists' : 'null',
+                'items' => $menuObj && $menuObj->items ? 'exists' : 'null',
+            ]);
             return $menu;
         }
 

@@ -21,8 +21,22 @@ class AppServiceProvider extends ServiceProvider
         // Выполняем только для тенантов, не для центрального домена
         if (tenancy()->initialized) {
             // Для тенантов используем Storage, который автоматически использует tenant-scoped disk
-            if (\Storage::disk('local')->has('database_created') && Schema::hasTable('abilities')) {
+            $hasDatabaseCreated = \Storage::disk('local')->has('database_created');
+            $hasAbilitiesTable = Schema::hasTable('abilities');
+            
+            \Log::info('AppServiceProvider: Checking menu creation', [
+                'has_database_created' => $hasDatabaseCreated,
+                'has_abilities_table' => $hasAbilitiesTable,
+            ]);
+            
+            if ($hasDatabaseCreated && $hasAbilitiesTable) {
                 $this->addMenus();
+                \Log::info('AppServiceProvider: Menus created successfully');
+            } else {
+                \Log::warning('AppServiceProvider: Menus not created', [
+                    'has_database_created' => $hasDatabaseCreated,
+                    'has_abilities_table' => $hasAbilitiesTable,
+                ]);
             }
         }
     }

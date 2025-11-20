@@ -35,8 +35,15 @@ class BootstrapController extends Controller
         $current_user_settings = $current_user->getAllSettings();
 
         $main_menu = $this->generateMenu('main_menu', $current_user);
+        \Log::info('BootstrapController: Generated main_menu', [
+            'menu_count' => count($main_menu),
+            'menu' => $main_menu,
+        ]);
 
         $setting_menu = $this->generateMenu('setting_menu', $current_user);
+        \Log::info('BootstrapController: Generated setting_menu', [
+            'menu_count' => count($setting_menu),
+        ]);
 
         $companies = $current_user->companies;
 
