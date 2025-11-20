@@ -18,6 +18,13 @@ class AdminUser extends Authenticatable implements FilamentUser
      */
     protected $table = 'users';
 
+    /**
+     * The schema name for PostgreSQL.
+     *
+     * @var string
+     */
+    protected $schema = 'admin';
+
     protected $fillable = [
         'name',
         'email',
@@ -32,6 +39,19 @@ class AdminUser extends Authenticatable implements FilamentUser
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * Override the table name to include schema for PostgreSQL.
+     */
+    public function getTable()
+    {
+        // Для PostgreSQL явно указываем схему
+        if (config('database.default') === 'pgsql') {
+            return $this->schema . '.' . $this->table;
+        }
+        
+        return $this->table;
+    }
 
     public function canAccessFilament(): bool
     {
