@@ -57,16 +57,32 @@ class LoginController extends Controller
             'authenticated_sanctum' => \Auth::guard('sanctum')->check(),
             'host' => $request->getHost(),
             'tenancy_initialized' => tenancy()->initialized,
+            'session_domain' => config('session.domain'),
+            'session_cookie_name' => config('session.cookie'),
         ]);
 
         // Для SPA возвращаем JSON вместо редиректа
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'user' => $user,
-            ]);
+        $response = $request->expectsJson() 
+            ? response()->json(['success' => true, 'user' => $user])
+            : redirect()->intended($this->redirectPath());
+        
+        // Логируем cookie, которые будут установлены
+        $cookies = [];
+        foreach ($response->headers->getCookies() as $cookie) {
+            $cookies[] = [
+                'name' => $cookie->getName(),
+                'domain' => $cookie->getDomain(),
+                'path' => $cookie->getPath(),
+                'secure' => $cookie->isSecure(),
+                'httpOnly' => $cookie->isHttpOnly(),
+                'sameSite' => $cookie->getSameSite(),
+            ];
         }
-
-        return redirect()->intended($this->redirectPath());
+        \Log::info('LoginController: Response cookies', [
+            'cookies' => $cookies,
+            'session_id' => $request->session()->getId(),
+        ]);
+        
+        return $response;
     }
 }

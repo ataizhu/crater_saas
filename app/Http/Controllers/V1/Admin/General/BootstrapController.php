@@ -27,10 +27,14 @@ class BootstrapController extends Controller
     public function __invoke(Request $request)
     {
         // Логируем для диагностики
+        $sessionCookie = $request->cookie(config('session.cookie'));
         \Log::info('BootstrapController: Request received', [
             'host' => $request->getHost(),
             'session_id' => $request->hasSession() ? $request->session()->getId() : null,
             'has_session' => $request->hasSession() && $request->session()->isStarted(),
+            'session_cookie_received' => $sessionCookie ? substr($sessionCookie, 0, 20) . '...' : 'missing',
+            'session_cookie_name' => config('session.cookie'),
+            'all_cookies' => array_keys($request->cookies->all()),
             'auth_guard_web' => \Auth::guard('web')->check(),
             'auth_guard_web_user' => \Auth::guard('web')->user() ? \Auth::guard('web')->user()->id : null,
             'auth_guard_sanctum' => \Auth::guard('sanctum')->check(),
@@ -38,6 +42,7 @@ class BootstrapController extends Controller
             'request_user' => $request->user() ? $request->user()->id : null,
             'tenancy_initialized' => tenancy()->initialized,
             'tenant_id' => tenancy()->initialized ? tenant('id') : null,
+            'session_domain' => config('session.domain'),
         ]);
         
         $current_user = $request->user();
