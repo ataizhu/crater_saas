@@ -30,6 +30,8 @@ jobs:
           docker compose up -d --build
           echo "Running migrations..."
           docker compose exec -u root app php artisan migrate --force || true
+          echo "Creating test admin user if not exists..."
+          docker compose exec -u root app php artisan admin:create "Admin" "admin@example.com" "testtest" || echo "Admin user may already exist"
           echo "Clearing caches..."
           docker compose exec -u root app php artisan config:clear || true
           docker compose exec -u root app php artisan config:cache || true
@@ -70,6 +72,8 @@ jobs:
           docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "ALTER DATABASE crater_saas_dev SET search_path TO admin, public;" || true
           echo "Running migrations..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan migrate --force || true
+          echo "Creating test admin user if not exists..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan admin:create "Admin" "admin@example.com" "testtest" || echo "Admin user may already exist"
           echo "Clearing caches..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:clear || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:cache || true
