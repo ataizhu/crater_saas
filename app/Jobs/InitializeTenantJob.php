@@ -52,14 +52,24 @@ class InitializeTenantJob
             
             // ВАЖНО: После tenancy()->initialize() снова устанавливаем search_path только на схему тенанта
             // Это гарантирует, что все таблицы создаются в правильной схеме
-            DB::statement("SET search_path TO {$schemaName}");
-
+            // Используем прямое подключение PDO для гарантированной установки
+            $pdo = DB::connection()->getPdo();
+            $pdo->exec("SET search_path TO {$schemaName}");
+            
+            // Проверяем текущий search_path (для отладки)
+            $currentPath = $pdo->query("SHOW search_path")->fetchColumn();
+            \Log::info("Current search_path after initialize: {$currentPath}");
+            
             // Запускаем миграции в схеме тенанта
             \Log::info("Running migrations for tenant: {$this->tenant->id}");
             Artisan::call('migrate', [
                 '--path' => 'database/migrations/tenant',
                 '--force' => true,
             ]);
+            
+            // Проверяем, в какой схеме создались таблицы (для отладки)
+            $tables = DB::select("SELECT schemaname, tablename FROM pg_tables WHERE schemaname IN ('{$schemaName}', 'public') ORDER BY schemaname, tablename");
+            \Log::info("Tables created in schemas: " . json_encode($tables));
             
             // Заполняем таблицу валют
             \Log::info("Seeding currencies for tenant: {$this->tenant->id}");
