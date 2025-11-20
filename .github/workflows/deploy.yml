@@ -63,6 +63,11 @@ jobs:
           echo "Clearing config cache before migration..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:clear || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app rm -rf /var/www/bootstrap/cache/*.php || true
+          echo "Creating admin schema if not exists..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "CREATE SCHEMA IF NOT EXISTS admin;" || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "GRANT ALL ON SCHEMA admin TO crater;" || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "CREATE SCHEMA IF NOT EXISTS public;" || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "ALTER DATABASE crater_saas_dev SET search_path TO admin, public;" || true
           echo "Running migrations..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan migrate --force || true
           echo "Clearing caches..."
