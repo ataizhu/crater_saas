@@ -33,8 +33,8 @@ class LogSanctumState
             'stateful_domains_config' => $statefulDomains,
             'is_stateful_request' => $isStateful,
             'request_uri' => $request->getRequestUri(),
-            'session_id' => $request->session()->getId(),
-            'session_exists' => $request->session()->exists(),
+            'session_id' => $request->hasSession() ? $request->session()->getId() : null,
+            'session_started' => $request->hasSession() && $request->session()->isStarted(),
             'authenticated_web' => \Auth::guard('web')->check(),
             'authenticated_sanctum' => \Auth::guard('sanctum')->check(),
         ]);
