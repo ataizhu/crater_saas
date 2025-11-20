@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Hash;
 
 class CreateAdminUser extends Command
 {
-    protected $signature = 'admin:create {name} {email} {password}';
+    protected $signature = 'admin:create {name} {email} {password} {--update : Update existing user password if user exists}';
     
     protected $description = 'Create a new admin user for Filament panel';
 
@@ -28,8 +28,25 @@ class CreateAdminUser extends Command
                 ->first();
             
             if ($existing) {
-                $this->info("Admin user with email {$email} already exists. Skipping creation.");
-                return 0;
+                if ($this->option('update')) {
+                    // Обновляем пароль существующего пользователя
+                    \Illuminate\Support\Facades\DB::table('admin.users')
+                        ->where('email', $email)
+                        ->update([
+                            'name' => $name,
+                            'password' => Hash::make($password),
+                            'updated_at' => now(),
+                        ]);
+                    
+                    $this->info("Admin user with email {$email} updated successfully!");
+                    $this->info("ID: {$existing->id}");
+                    $this->info("Email: {$email}");
+                    $this->info("Login at: " . config('app.url') . '/admin/login');
+                    return 0;
+                } else {
+                    $this->warn("Admin user with email {$email} already exists. Use --update flag to update password.");
+                    return 1;
+                }
             }
             
             // Создаем пользователя через DB напрямую, чтобы избежать проблем с Eloquent
@@ -44,6 +61,7 @@ class CreateAdminUser extends Command
             $this->info("Admin user created successfully!");
             $this->info("ID: {$userId}");
             $this->info("Email: {$email}");
+            $this->info("Password: {$password}");
             $this->info("Login at: " . config('app.url') . '/admin/login');
             
             return 0;
