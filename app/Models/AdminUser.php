@@ -41,15 +41,16 @@ class AdminUser extends Authenticatable implements FilamentUser
     ];
 
     /**
-     * Override the table name to include schema for PostgreSQL.
+     * Get the table associated with the model.
+     * 
+     * Note: Schema is already set in config/database.php ('schema' => 'admin'),
+     * so we don't need to prepend it here. Laravel will automatically use
+     * the schema from the database configuration.
      */
     public function getTable()
     {
-        // Для PostgreSQL явно указываем схему
-        if (config('database.default') === 'pgsql') {
-            return $this->schema . '.' . $this->table;
-        }
-        
+        // Не добавляем схему вручную, так как она уже указана в config/database.php
+        // Laravel автоматически использует схему из конфигурации подключения
         return $this->table;
     }
 
