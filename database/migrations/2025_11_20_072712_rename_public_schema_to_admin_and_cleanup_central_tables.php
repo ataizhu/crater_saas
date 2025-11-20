@@ -22,29 +22,33 @@ class RenamePublicSchemaToAdminAndCleanupCentralTables extends Migration
         $databaseName = $connection->getDatabaseName();
 
         // Check if admin schema already exists
-        $adminSchemaExists = DB::selectOne("
-            SELECT EXISTS(
-                SELECT 1 
-                FROM information_schema.schemata 
-                WHERE schema_name = 'admin'
-            ) as exists
+        $adminExists = DB::selectOne("
+            SELECT COUNT(*) as count
+            FROM information_schema.schemata 
+            WHERE schema_name = 'admin'
         ");
+        
+        $adminExists = $adminExists && $adminExists->count > 0;
 
         // Check if public schema still exists
-        $publicSchemaExists = DB::selectOne("
-            SELECT EXISTS(
-                SELECT 1 
-                FROM information_schema.schemata 
-                WHERE schema_name = 'public'
-            ) as exists
+        $publicExists = DB::selectOne("
+            SELECT COUNT(*) as count
+            FROM information_schema.schemata 
+            WHERE schema_name = 'public'
         ");
+        
+        $publicExists = $publicExists && $publicExists->count > 0;
 
         // Rename public schema to admin only if:
         // 1. Admin schema doesn't exist
         // 2. Public schema still exists
-        if ($adminSchemaExists && !$adminSchemaExists->exists && 
-            $publicSchemaExists && $publicSchemaExists->exists) {
-            DB::statement('ALTER SCHEMA public RENAME TO admin');
+        if (!$adminExists && $publicExists) {
+            try {
+                DB::statement('ALTER SCHEMA public RENAME TO admin');
+            } catch (\Exception $e) {
+                // Schema might already be renamed, continue
+                \Log::warning("Could not rename public schema: " . $e->getMessage());
+            }
         }
 
         // Create public schema if it doesn't exist (PostgreSQL requires it)
