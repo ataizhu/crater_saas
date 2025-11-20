@@ -33,15 +33,24 @@ jobs:
           docker compose exec -u root app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
           echo "Generating application key if not set..."
           docker compose exec -u root app php artisan key:generate --force || true
+          echo "Clearing config cache before migration..."
+          docker compose exec -u root app php artisan config:clear || true
+          docker compose exec -u root app rm -rf /var/www/bootstrap/cache/*.php || true
+          echo "Creating admin schema if not exists..."
+          docker compose exec db psql -U crater -d crater_saas -c "CREATE SCHEMA IF NOT EXISTS admin;" || true
+          docker compose exec db psql -U crater -d crater_saas -c "GRANT ALL ON SCHEMA admin TO crater;" || true
+          docker compose exec db psql -U crater -d crater_saas -c "ALTER DATABASE crater_saas SET search_path TO admin;" || true
           echo "Running migrations..."
           docker compose exec -u root app php artisan migrate --force || true
           echo "Creating test admin user if not exists..."
           docker compose exec -u root app php artisan admin:create "Admin" "admin@example.com" "testtest" || echo "Admin user may already exist"
-          echo "Clearing caches..."
+          echo "Clearing all caches..."
           docker compose exec -u root app php artisan config:clear || true
-          docker compose exec -u root app php artisan config:cache || true
-          docker compose exec -u root app php artisan route:cache || true
-          docker compose exec -u root app php artisan view:cache || true
+          docker compose exec -u root app php artisan cache:clear || true
+          docker compose exec -u root app php artisan route:clear || true
+          docker compose exec -u root app php artisan view:clear || true
+          echo "Clearing Opcache by restarting PHP-FPM..."
+          docker compose restart app || true
           echo "PRODUCTION deployment completed successfully!"
 
   deploy-dev:
