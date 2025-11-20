@@ -21,30 +21,37 @@ class RenamePublicToAdminSchema extends Migration
         $databaseName = DB::connection()->getDatabaseName();
         $username = config('database.connections.pgsql.username', 'crater');
 
+        // ВАЖНО: Создаем схему admin ПЕРЕД установкой search_path
+        // Используем прямое подключение без указания схемы
+        $pdo = DB::connection()->getPdo();
+        
         // Проверяем существование схем
-        $adminCount = DB::selectOne("SELECT COUNT(*) as count FROM information_schema.schemata WHERE schema_name = 'admin'");
-        $publicCount = DB::selectOne("SELECT COUNT(*) as count FROM information_schema.schemata WHERE schema_name = 'public'");
+        $adminExists = $pdo->query("SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'admin'")->fetchColumn() > 0;
+        $publicExists = $pdo->query("SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = 'public'")->fetchColumn() > 0;
 
         // Переименовываем public в admin, если нужно
-        if ($adminCount->count == 0 && $publicCount->count > 0) {
-            DB::statement('ALTER SCHEMA public RENAME TO admin');
+        if (!$adminExists && $publicExists) {
+            $pdo->exec('ALTER SCHEMA public RENAME TO admin');
+            $adminExists = true;
         }
 
         // Создаем схему admin, если её нет
-        if ($adminCount->count == 0) {
-            DB::statement('CREATE SCHEMA IF NOT EXISTS admin');
-            DB::statement("GRANT ALL ON SCHEMA admin TO {$username}");
+        if (!$adminExists) {
+            $pdo->exec('CREATE SCHEMA IF NOT EXISTS admin');
+            $pdo->exec("GRANT ALL ON SCHEMA admin TO {$username}");
         }
 
         // Создаем public схему обратно (PostgreSQL требует)
-        DB::statement('CREATE SCHEMA IF NOT EXISTS public');
-        DB::statement("GRANT ALL ON SCHEMA public TO {$username}");
+        if (!$publicExists) {
+            $pdo->exec('CREATE SCHEMA IF NOT EXISTS public');
+            $pdo->exec("GRANT ALL ON SCHEMA public TO {$username}");
+        }
 
-        // Обновляем search_path
-        DB::statement("ALTER DATABASE {$databaseName} SET search_path TO admin, public");
+        // Обновляем search_path для базы данных
+        $pdo->exec("ALTER DATABASE {$databaseName} SET search_path TO admin, public");
 
-        // Переключаемся на схему admin для создания таблиц
-        DB::statement('SET search_path TO admin');
+        // Устанавливаем search_path для текущей сессии
+        $pdo->exec('SET search_path TO admin, public');
 
         // Создаем таблицу tenants
         if (!Schema::hasTable('tenants')) {
