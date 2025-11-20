@@ -45,15 +45,36 @@ jobs:
           docker compose exec db psql -U crater -d crater_saas -c "CREATE SCHEMA IF NOT EXISTS admin;" || true
           docker compose exec db psql -U crater -d crater_saas -c "GRANT ALL ON SCHEMA admin TO crater;" || true
           docker compose exec db psql -U crater -d crater_saas -c "ALTER DATABASE crater_saas SET search_path TO admin;" || true
-          echo "Checking if cache table exists..."
-          docker compose exec db psql -U crater -d crater_saas -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'admin' AND table_name = 'cache');" || true
+          
+          echo "Setting search_path for current session before migrations..."
+          docker compose exec -u root app php artisan tinker --execute="DB::statement('SET search_path TO admin'); echo 'search_path set to admin';" || true
+          
+          echo "Checking existing tables in admin schema..."
+          docker compose exec db psql -U crater -d crater_saas -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'admin' ORDER BY table_name;" || true
+          
+          echo "Checking if migrations table exists..."
+          docker compose exec db psql -U crater -d crater_saas -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'admin' AND table_name = 'migrations');" || true
+          
           echo "Running migrations..."
           docker compose exec -u root app php artisan migrate --force || true
-          echo "Creating cache table manually if migration failed..."
-          docker compose exec db psql -U crater -d crater_saas -c "CREATE TABLE IF NOT EXISTS admin.cache (key VARCHAR(255) PRIMARY KEY, value TEXT, expiration INTEGER);" || true
-          docker compose exec db psql -U crater -d crater_saas -c "CREATE TABLE IF NOT EXISTS admin.cache_locks (key VARCHAR(255) PRIMARY KEY, owner VARCHAR(255), expiration INTEGER);" || true
-          docker compose exec db psql -U crater -d crater_saas -c "GRANT ALL ON admin.cache TO crater;" || true
-          docker compose exec db psql -U crater -d crater_saas -c "GRANT ALL ON admin.cache_locks TO crater;" || true
+          
+          echo "Verifying tables were created after migrations..."
+          docker compose exec db psql -U crater -d crater_saas -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'admin' ORDER BY table_name;" || true
+          
+          echo "Checking if users table exists (critical for login)..."
+          docker compose exec db psql -U crater -d crater_saas -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'admin' AND table_name = 'users');" || true
+          
+          echo "Creating missing tables manually if migrations failed..."
+          docker compose exec db psql -U crater -d crater_saas -c "SET search_path TO admin; CREATE TABLE IF NOT EXISTS tenants (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), owner_name VARCHAR(255), owner_email VARCHAR(255), owner_password VARCHAR(255), created_at TIMESTAMP, updated_at TIMESTAMP, data JSONB);" || true
+          docker compose exec db psql -U crater -d crater_saas -c "SET search_path TO admin; CREATE TABLE IF NOT EXISTS domains (id SERIAL PRIMARY KEY, domain VARCHAR(255) UNIQUE NOT NULL, tenant_id VARCHAR(255) NOT NULL, created_at TIMESTAMP, updated_at TIMESTAMP);" || true
+          docker compose exec db psql -U crater -d crater_saas -c "SET search_path TO admin; CREATE TABLE IF NOT EXISTS users (id BIGSERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, email VARCHAR(255) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, remember_token VARCHAR(100), created_at TIMESTAMP, updated_at TIMESTAMP);" || true
+          docker compose exec db psql -U crater -d crater_saas -c "SET search_path TO admin; CREATE TABLE IF NOT EXISTS cache (key VARCHAR(255) PRIMARY KEY, value TEXT, expiration INTEGER);" || true
+          docker compose exec db psql -U crater -d crater_saas -c "SET search_path TO admin; CREATE TABLE IF NOT EXISTS cache_locks (key VARCHAR(255) PRIMARY KEY, owner VARCHAR(255), expiration INTEGER);" || true
+          docker compose exec db psql -U crater -d crater_saas -c "GRANT ALL ON ALL TABLES IN SCHEMA admin TO crater;" || true
+          docker compose exec db psql -U crater -d crater_saas -c "GRANT ALL ON ALL SEQUENCES IN SCHEMA admin TO crater;" || true
+          
+          echo "Final verification of critical tables..."
+          docker compose exec db psql -U crater -d crater_saas -c "SELECT table_name, (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'admin' AND table_name = t.table_name) as column_count FROM information_schema.tables t WHERE t.table_schema = 'admin' AND t.table_name IN ('users', 'tenants', 'domains', 'cache', 'cache_locks', 'migrations') ORDER BY table_name;" || true
           echo "Creating test admin user if not exists..."
           docker compose exec -u root app php artisan admin:create "Admin" "admin@example.com" "testtest" || echo "Admin user may already exist"
           echo "Fixing permissions again after migrations..."
