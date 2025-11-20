@@ -20,9 +20,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Выполняем только для тенантов, не для центрального домена
         if (tenancy()->initialized) {
-            $databaseCreatedFlag = storage_path('app/database_created');
-            
-            if (file_exists($databaseCreatedFlag) && Schema::hasTable('abilities')) {
+            // Для тенантов используем Storage, который автоматически использует tenant-scoped disk
+            if (\Storage::disk('local')->has('database_created') && Schema::hasTable('abilities')) {
                 $this->addMenus();
             }
         }
