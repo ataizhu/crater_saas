@@ -26,9 +26,27 @@ class BootstrapController extends Controller
      */
     public function __invoke(Request $request)
     {
+        // Логируем для диагностики
+        \Log::info('BootstrapController: Request received', [
+            'host' => $request->getHost(),
+            'session_id' => $request->session()->getId(),
+            'has_session' => $request->session()->exists(),
+            'auth_guard_web' => \Auth::guard('web')->check(),
+            'auth_guard_web_user' => \Auth::guard('web')->user() ? \Auth::guard('web')->user()->id : null,
+            'auth_guard_sanctum' => \Auth::guard('sanctum')->check(),
+            'auth_guard_sanctum_user' => \Auth::guard('sanctum')->user() ? \Auth::guard('sanctum')->user()->id : null,
+            'request_user' => $request->user() ? $request->user()->id : null,
+            'tenancy_initialized' => tenancy()->initialized,
+            'tenant_id' => tenancy()->initialized ? tenant('id') : null,
+        ]);
+        
         $current_user = $request->user();
         
         if (!$current_user) {
+            \Log::warning('BootstrapController: User not authenticated', [
+                'host' => $request->getHost(),
+                'session_id' => $request->session()->getId(),
+            ]);
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
         
