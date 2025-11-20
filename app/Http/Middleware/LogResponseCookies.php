@@ -37,6 +37,21 @@ class LogResponseCookies
             $setCookieHeaders = [$setCookieHeaders];
         }
         
+        // Безопасно проверяем статус сессии
+        $sessionId = null;
+        $sessionIsDirty = false;
+        if ($request->hasSession() && $request->session()->isStarted()) {
+            try {
+                $sessionId = $request->session()->getId();
+                // isDirty() может не существовать в некоторых версиях Laravel
+                if (method_exists($request->session(), 'isDirty')) {
+                    $sessionIsDirty = $request->session()->isDirty();
+                }
+            } catch (\Exception $e) {
+                // Игнорируем ошибки при проверке сессии
+            }
+        }
+        
         \Log::info('LogResponseCookies: Response cookies', [
             'cookies' => $cookies,
             'cookie_count' => count($cookies),
@@ -44,8 +59,8 @@ class LogResponseCookies
             'set_cookie_count' => count($setCookieHeaders),
             'request_uri' => $request->getRequestUri(),
             'session_cookie_name' => config('session.cookie'),
-            'session_id' => $request->hasSession() ? $request->session()->getId() : null,
-            'session_is_dirty' => $request->hasSession() ? $request->session()->isDirty() : false,
+            'session_id' => $sessionId,
+            'session_is_dirty' => $sessionIsDirty,
         ]);
         
         return $response;
