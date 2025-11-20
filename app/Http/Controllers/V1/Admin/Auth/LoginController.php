@@ -60,15 +60,30 @@ class LoginController extends Controller
             'session_domain' => config('session.domain'),
             'session_cookie_name' => config('session.cookie'),
         ]);
-
-        // ВАЖНО: Помечаем сессию как измененную, чтобы StartSession middleware установил cookie
-        // Простое сохранение может не сработать, нужно явно изменить данные сессии
-        $request->session()->put('_last_activity', now()->timestamp);
         
         // Для SPA возвращаем JSON вместо редиректа
         $response = $request->expectsJson() 
             ? response()->json(['success' => true, 'user' => $user])
             : redirect()->intended($this->redirectPath());
+        
+        // ВАЖНО: Принудительно сохраняем сессию и устанавливаем cookie вручную
+        // StartSession middleware может не установить cookie для JSON ответов
+        $request->session()->save();
+        
+        // Явно устанавливаем cookie сессии в ответе
+        $sessionCookie = cookie(
+            config('session.cookie'),
+            $request->session()->getId(),
+            config('session.lifetime') * 60,
+            config('session.path', '/'),
+            config('session.domain'),
+            config('session.secure', false),
+            config('session.http_only', true),
+            false,
+            config('session.same_site', 'lax')
+        );
+        
+        $response->cookie($sessionCookie);
         
         return $response;
     }
