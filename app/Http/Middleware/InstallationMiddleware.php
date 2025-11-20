@@ -17,7 +17,7 @@ class InstallationMiddleware
     public function handle($request, Closure $next)
     {
         // Skip for Filament admin panel, assets and Livewire requests
-        if ($request->is('super-admin') || $request->is('super-admin/*') || 
+        if ($request->is('admin') || $request->is('admin/*') || 
             $request->is('filament/*') || $request->is('vendor/livewire/*') ||
             $request->is('livewire/*')) {
             return $next($request);
