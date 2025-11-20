@@ -23,9 +23,16 @@ jobs:
           echo "Starting PRODUCTION deployment..."
           cd /var/www/crater || { echo "Directory not found! Creating..."; mkdir -p /var/www/crater; cd /var/www/crater; git clone https://github.com/ataizhu/crater_saas.git . || exit 1; }
           echo "Current directory: $(pwd)"
+          echo "Verifying git status before update..."
           git fetch origin
+          echo "Current branch before update: $(git branch --show-current)"
+          echo "Current commit before update: $(git rev-parse HEAD)"
+          echo "Latest master commit: $(git rev-parse origin/master)"
           git reset --hard origin/master
-          echo "Current branch: $(git branch --show-current)"
+          echo "Current branch after update: $(git branch --show-current)"
+          echo "Current commit after update: $(git rev-parse HEAD)"
+          echo "Verifying VerifyCsrfToken.php has latest changes..."
+          grep -q "X-XSRF-TOKEN" /var/www/crater/app/Http/Middleware/VerifyCsrfToken.php && echo "✓ VerifyCsrfToken.php updated" || echo "✗ VerifyCsrfToken.php missing X-XSRF-TOKEN"
           echo "Code updated, building containers..."
           docker compose up -d --build
           echo "Fixing storage permissions..."
