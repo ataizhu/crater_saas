@@ -84,11 +84,21 @@ jobs:
           echo "Clearing config cache before migration..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:clear || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app rm -rf /var/www/bootstrap/cache/*.php || true
-              echo "Creating admin schema if not exists..."
-              docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "CREATE SCHEMA IF NOT EXISTS admin;" || true
-              docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "GRANT ALL ON SCHEMA admin TO crater;" || true
-              docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "ALTER DATABASE crater_saas_dev SET search_path TO admin;" || true
-          echo "Running migrations..."
+          echo "Dropping database if exists..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -T db psql -U crater -c "DROP DATABASE IF EXISTS crater_saas_dev;" 2>/dev/null || \
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -T db psql -U postgres -c "DROP DATABASE IF EXISTS crater_saas_dev;" 2>/dev/null || \
+          echo "Database may not exist or already dropped"
+          
+          echo "Creating fresh database..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -T db psql -U crater -c "CREATE DATABASE crater_saas_dev OWNER crater;" 2>/dev/null || \
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -T db psql -U postgres -c "CREATE DATABASE crater_saas_dev OWNER crater;" || true
+          
+          echo "Creating admin schema..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "CREATE SCHEMA IF NOT EXISTS admin;" || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "GRANT ALL ON SCHEMA admin TO crater;" || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "ALTER DATABASE crater_saas_dev SET search_path TO admin;" || true
+          
+          echo "Running fresh migrations..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan migrate --force || true
           echo "Creating test admin user if not exists..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan admin:create "Admin" "admin@example.com" "testtest" || echo "Admin user may already exist"
