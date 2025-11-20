@@ -13,13 +13,18 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Filament routes registered automatically via FilamentServiceProvider
+// Filament base path is 'admin', so login is at /admin/login
+// We redirect /login to /admin/login for user convenience
+
+// Redirect /login to /admin/login for Filament
+// Note: This route may be overridden by routes/web.php for tenants
+// But on central domain, PreventAccessFromCentralDomains middleware should block tenant routes
+Route::get('/login', function () {
+    return redirect('/admin/login', 301);
+})->middleware('web')->name('filament.login.redirect');
 
 // Redirects
 Route::get('/', function () {
-    return redirect('/super-admin/login');
-});
-
-Route::get('/super-admin', function () {
-    return redirect('/super-admin/login');
+    return redirect('/login');
 });
 

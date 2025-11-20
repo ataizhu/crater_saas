@@ -6,12 +6,14 @@
 
 Система использует **PostgreSQL схемы (schemas)** для изоляции тенантов:
 
-1. **Центральная БД** (`crater_saas` или `crater_saas_dev`):
+1. **Центральная схема `admin`** в БД (`crater_saas` или `crater_saas_dev`):
    - `tenants` - список всех тенантов
    - `domains` - домены/поддомены для каждого тенанта
    - `admin_users` - пользователи Filament админки (супер-админы)
    - `cache` - кеш для центрального домена
+   - `cache_locks` - блокировки кеша
    - `personal_access_tokens` - токены для API
+   - `migrations` - системная таблица Laravel
 
 2. **Схемы тенантов** (например, `tenanttest`, `tenantabc`):
    - Каждый тенант имеет свою схему: `tenant{tenant_id}`
@@ -21,8 +23,8 @@
 ### Домены
 
 - **Центральный домен** (админка Filament):
-  - Production: `crater.billing.mycloud.kg/super-admin`
-  - Dev: `dev.crater.billing.mycloud.kg/super-admin`
+  - Production: `crater.billing.mycloud.kg/admin/login`
+  - Dev: `dev.crater.billing.mycloud.kg/admin/login`
 
 - **Тенантские поддомены**:
   - Production: `{tenant_id}.crater.billing.mycloud.kg`
@@ -36,8 +38,8 @@
 #### Вариант A: Через Filament админку (рекомендуется)
 
 1. Зайдите на центральный домен:
-   - Production: `http://crater.billing.mycloud.kg/super-admin/login`
-   - Dev: `http://dev.crater.billing.mycloud.kg/super-admin/login`
+   - Production: `http://crater.billing.mycloud.kg/admin/login`
+   - Dev: `http://dev.crater.billing.mycloud.kg/admin/login`
 
 2. Создайте супер-админа (если еще нет):
    ```bash
@@ -246,9 +248,9 @@ docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php arti
 
 **Создание тенанта для тестирования:**
 
-1. Создайте тенанта в dev окружении через админку: `dev.crater.billing.mycloud.kg/super-admin`
+1. Создайте тенанта в dev окружении через админку: `dev.crater.billing.mycloud.kg/admin/login`
 2. Протестируйте на: `test123.dev.crater.billing.mycloud.kg`
-3. Если всё ок, создайте тот же тенант в production: `crater.billing.mycloud.kg/super-admin`
+3. Если всё ок, создайте тот же тенант в production: `crater.billing.mycloud.kg/admin/login`
 
 ### 8. Полезные команды
 
@@ -302,7 +304,7 @@ docker compose exec db psql -U crater -d crater_saas -c "\dt tenanttest.*"
    git push origin dev
    
    # Создайте тенанта в dev окружении
-   # Зайдите на dev.crater.billing.mycloud.kg/super-admin
+   # Зайдите на dev.crater.billing.mycloud.kg/admin/login
    # Создайте тенанта через админку
    
    # Протестируйте на {id}.dev.crater.billing.mycloud.kg
@@ -316,7 +318,7 @@ docker compose exec db psql -U crater -d crater_saas -c "\dt tenanttest.*"
    git push origin master
    
    # Создайте тенанта в production (если нужно)
-   # Зайдите на crater.billing.mycloud.kg/super-admin
+   # Зайдите на crater.billing.mycloud.kg/admin/login
    ```
 
 ### 10. Важные моменты

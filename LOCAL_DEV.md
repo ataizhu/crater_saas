@@ -94,7 +94,7 @@ docker compose exec app npm run build
 
 ## Доступ к приложению
 
-- **Центральная админка (Filament):** http://crater.test/super-admin/login
+- **Центральная админка (Filament):** http://crater.test/admin/login
 - **Тенант админка:** http://test.crater.test/admin/login (после создания тенанта `test`)
 - **База данных:** localhost:54320
   - Пользователь: `crater`
@@ -125,7 +125,7 @@ git push origin dev
 
 ### 1. Создание тенанта через админку
 
-1. Зайдите в админку: http://crater.test/super-admin/login
+1. Зайдите в админку: http://crater.test/admin/login
 2. Перейдите: **Тенанты** → **Создать**
 3. Заполните форму:
    - **ID**: `test` (уникальный идентификатор)
@@ -365,7 +365,7 @@ docker compose exec db psql -U crater -d crater_saas -c "SELECT * FROM tenanttes
    ```
 
 2. **Создайте тестового тенанта:**
-   - Зайдите: http://crater.test/super-admin/login
+   - Зайдите: http://crater.test/admin/login
    - Создайте тенанта через админку
 
 3. **Тестируйте на тенанте:**

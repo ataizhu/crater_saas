@@ -152,5 +152,19 @@ Route::get('/forgot-password', function () {
 })->where('vue', '[\/\w\.-]*')->name('forgot-password')->middleware(['install', 'guest']);
 
 Route::get('/login', function () {
+    // Если это центральный домен, редиректим на Filament админку
+    $centralDomains = config('tenancy.central_domains', []);
+    $currentHost = request()->getHost();
+    
+    // Проверяем, является ли текущий домен центральным
+    $isCentralDomain = in_array($currentHost, $centralDomains) || 
+                       in_array('*.' . $currentHost, $centralDomains);
+    
+    if ($isCentralDomain && !tenancy()->initialized) {
+        // Центральный домен - редирект на Filament
+        return redirect('/admin/login');
+    }
+    
+    // Тенантский домен - обычный логин
     return view('app');
 })->where('vue', '[\/\w\.-]*')->name('login')->middleware(['install', 'guest']);
