@@ -26,31 +26,16 @@ class BootstrapController extends Controller
      */
     public function __invoke(Request $request)
     {
-        // Логируем для диагностики
-        $sessionCookie = $request->cookie(config('session.cookie'));
-        \Log::info('BootstrapController: Request received', [
-            'host' => $request->getHost(),
-            'session_id' => $request->hasSession() ? $request->session()->getId() : null,
-            'has_session' => $request->hasSession() && $request->session()->isStarted(),
-            'session_cookie_received' => $sessionCookie ? substr($sessionCookie, 0, 20) . '...' : 'missing',
-            'session_cookie_name' => config('session.cookie'),
-            'all_cookies' => array_keys($request->cookies->all()),
-            'auth_guard_web' => \Auth::guard('web')->check(),
-            'auth_guard_web_user' => \Auth::guard('web')->user() ? \Auth::guard('web')->user()->id : null,
-            'auth_guard_sanctum' => \Auth::guard('sanctum')->check(),
-            'auth_guard_sanctum_user' => \Auth::guard('sanctum')->user() ? \Auth::guard('sanctum')->user()->id : null,
-            'request_user' => $request->user() ? $request->user()->id : null,
-            'tenancy_initialized' => tenancy()->initialized,
-            'tenant_id' => tenancy()->initialized ? tenant('id') : null,
-            'session_domain' => config('session.domain'),
-        ]);
-        
-        $current_user = $request->user();
+        // Используем web guard, так как пользователь аутентифицирован через сессию
+        $current_user = \Auth::guard('web')->user();
         
         if (!$current_user) {
             \Log::warning('BootstrapController: User not authenticated', [
                 'host' => $request->getHost(),
                 'session_id' => $request->session()->getId(),
+                'request_user' => $request->user() ? $request->user()->id : null,
+                'auth_guard_web' => \Auth::guard('web')->check(),
+                'auth_guard_sanctum' => \Auth::guard('sanctum')->check(),
             ]);
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
@@ -63,17 +48,7 @@ class BootstrapController extends Controller
         $current_user_settings = $current_user->getAllSettings();
 
         $main_menu = $this->generateMenu('main_menu', $current_user);
-        \Log::info('BootstrapController: Generated main_menu', [
-            'menu_count' => count($main_menu),
-            'menu' => $main_menu,
-            'tenant_id' => tenancy()->initialized ? tenant('id') : null,
-        ]);
-
         $setting_menu = $this->generateMenu('setting_menu', $current_user);
-        \Log::info('BootstrapController: Generated setting_menu', [
-            'menu_count' => count($setting_menu),
-            'tenant_id' => tenancy()->initialized ? tenant('id') : null,
-        ]);
 
         $companies = $current_user->companies;
 

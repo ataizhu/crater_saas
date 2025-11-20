@@ -38,19 +38,12 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \Crater\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \Crater\Http\Middleware\LogResponseCookies::class, // Логирование cookie для диагностики
         ],
 
         'api' => [
-            \Crater\Http\Middleware\EncryptCookies::class, // Для CSRF cookie
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class, // Для CSRF cookie
-            \Illuminate\Session\Middleware\StartSession::class, // Для CSRF token в сессии
-            \Crater\Http\Middleware\LogSanctumState::class, // Логирование для диагностики
-            EnsureFrontendRequestsAreStateful::class,
-            \Crater\Http\Middleware\VerifyCsrfToken::class, // CSRF для stateful API (SPA)
+            EnsureFrontendRequestsAreStateful::class, // ВАЖНО: Первым! Он сам добавит нужные middleware для stateful запросов
             'throttle:180,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \Crater\Http\Middleware\LogResponseCookies::class, // Логирование cookie для диагностики
         ],
     ];
 

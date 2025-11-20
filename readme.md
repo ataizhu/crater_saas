@@ -24,6 +24,13 @@ Web Application is made using Laravel & VueJS while the Mobile Apps are built us
 - [Developer Guide](https://docs.craterapp.com/developer-guide.html)
 - [API Documentation](https://api-docs.craterapp.com)
 
+### Local Documentation
+
+- [Local Development Setup](LOCAL_DEV.md) - Настройка локальной среды разработки
+- [Development Guide](DEVELOPMENT.md) - Руководство по разработке (мультитенантность)
+- [Deployment Guide](DEPLOYMENT.md) - Инструкция по деплою на сервер
+- [Authentication & CSRF](AUTHENTICATION.md) - Настройка аутентификации, сессий и CSRF защиты
+
 ## Download
 
 - [Download Link](https://craterapp.com/downloads)

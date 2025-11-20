@@ -49,11 +49,23 @@ class CustomersController extends Controller
      */
     public function store(Requests\CustomerRequest $request)
     {
-        $this->authorize('create', Customer::class);
+        try {
+            $this->authorize('create', Customer::class);
 
-        $customer = Customer::createCustomer($request);
+            $customer = Customer::createCustomer($request);
 
-        return new CustomerResource($customer);
+            return new CustomerResource($customer);
+        } catch (\Exception $e) {
+            \Log::error('CustomersController: Error creating customer', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => $request->user() ? $request->user()->id : null,
+                'company_header' => $request->header('company'),
+                'request_data' => $request->all(),
+            ]);
+            
+            throw $e;
+        }
     }
 
     /**

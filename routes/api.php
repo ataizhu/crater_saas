@@ -186,7 +186,7 @@ Route::prefix('/v1')->group(function () {
     });
 
 
-    Route::middleware(['auth:sanctum', 'company'])->group(function () {
+    Route::middleware(['auth:web,sanctum', 'company'])->group(function () {
         Route::middleware(['bouncer'])->group(function () {
 
             // Bootstrap

@@ -47,43 +47,10 @@ class LoginController extends Controller
      */
     protected function authenticated(\Illuminate\Http\Request $request, $user)
     {
-        \Log::info('LoginController: User authenticated', [
-            'user_id' => $user->id,
-            'user_email' => $user->email,
-            'guard' => 'web',
-            'session_id' => $request->session()->getId(),
-            'session_started' => $request->session()->isStarted(),
-            'authenticated_web' => \Auth::guard('web')->check(),
-            'authenticated_sanctum' => \Auth::guard('sanctum')->check(),
-            'host' => $request->getHost(),
-            'tenancy_initialized' => tenancy()->initialized,
-            'session_domain' => config('session.domain'),
-            'session_cookie_name' => config('session.cookie'),
-        ]);
-        
         // Для SPA возвращаем JSON вместо редиректа
         $response = $request->expectsJson() 
             ? response()->json(['success' => true, 'user' => $user])
             : redirect()->intended($this->redirectPath());
-        
-        // ВАЖНО: Принудительно сохраняем сессию и устанавливаем cookie вручную
-        // StartSession middleware может не установить cookie для JSON ответов
-        $request->session()->save();
-        
-        // Явно устанавливаем cookie сессии в ответе
-        $sessionCookie = cookie(
-            config('session.cookie'),
-            $request->session()->getId(),
-            config('session.lifetime') * 60,
-            config('session.path', '/'),
-            config('session.domain'),
-            config('session.secure', false),
-            config('session.http_only', true),
-            false,
-            config('session.same_site', 'lax')
-        );
-        
-        $response->cookie($sessionCookie);
         
         return $response;
     }
