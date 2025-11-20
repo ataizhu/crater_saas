@@ -18,6 +18,12 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapThree();
         $this->loadJsonTranslationsFrom(resource_path('scripts/locales'));
 
+        // Логируем всегда для диагностики
+        \Log::info('AppServiceProvider::boot() called', [
+            'tenancy_initialized' => tenancy()->initialized,
+            'tenant_id' => tenancy()->initialized ? tenant('id') : null,
+        ]);
+
         // Выполняем только для тенантов, не для центрального домена
         if (tenancy()->initialized) {
             // Для тенантов используем Storage, который автоматически использует tenant-scoped disk

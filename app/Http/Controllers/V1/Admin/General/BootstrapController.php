@@ -38,11 +38,13 @@ class BootstrapController extends Controller
         \Log::info('BootstrapController: Generated main_menu', [
             'menu_count' => count($main_menu),
             'menu' => $main_menu,
+            'tenant_id' => tenancy()->initialized ? tenant('id') : null,
         ]);
 
         $setting_menu = $this->generateMenu('setting_menu', $current_user);
         \Log::info('BootstrapController: Generated setting_menu', [
             'menu_count' => count($setting_menu),
+            'tenant_id' => tenancy()->initialized ? tenant('id') : null,
         ]);
 
         $companies = $current_user->companies;
