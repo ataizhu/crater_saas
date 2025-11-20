@@ -22,11 +22,16 @@ class AppServiceProvider extends ServiceProvider
         if (tenancy()->initialized) {
             // Для тенантов используем Storage, который автоматически использует tenant-scoped disk
             $hasDatabaseCreated = \Storage::disk('local')->has('database_created');
-            $hasAbilitiesTable = Schema::hasTable('abilities');
+            
+            // Проверяем таблицу abilities через Bouncer Models, так как она может использовать префикс
+            $abilitiesTableName = \Silber\Bouncer\Database\Models::table('abilities');
+            $hasAbilitiesTable = Schema::hasTable($abilitiesTableName);
             
             \Log::info('AppServiceProvider: Checking menu creation', [
                 'has_database_created' => $hasDatabaseCreated,
+                'abilities_table_name' => $abilitiesTableName,
                 'has_abilities_table' => $hasAbilitiesTable,
+                'tenant_id' => tenant('id'),
             ]);
             
             if ($hasDatabaseCreated && $hasAbilitiesTable) {
@@ -35,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
             } else {
                 \Log::warning('AppServiceProvider: Menus not created', [
                     'has_database_created' => $hasDatabaseCreated,
+                    'abilities_table_name' => $abilitiesTableName,
                     'has_abilities_table' => $hasAbilitiesTable,
                 ]);
             }
