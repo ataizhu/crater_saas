@@ -60,6 +60,8 @@ jobs:
           docker compose -p crater-dev -f docker-compose.dev.yml up -d --build
           echo "Installing Composer dependencies..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app composer install --no-dev --optimize-autoloader || true
+          echo "Dropping admin schema if exists (dev only, for clean migration)..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec db psql -U crater -d crater_saas_dev -c "DROP SCHEMA IF EXISTS admin CASCADE;" || true
           echo "Running migrations..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan migrate --force || true
           echo "Clearing caches..."
