@@ -54,6 +54,21 @@ class AdminUser extends Authenticatable implements FilamentUser
         return $this->table;
     }
 
+    /**
+     * Create a new Eloquent query builder for the model.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder|static
+     */
+    public function newEloquentBuilder($query)
+    {
+        // Устанавливаем search_path перед каждым запросом для модели AdminUser
+        // Это гарантирует, что запросы идут в схему admin
+        $query->getConnection()->statement('SET search_path TO admin');
+        
+        return parent::newEloquentBuilder($query);
+    }
+
     public function canAccessFilament(): bool
     {
         return true; // В будущем можно добавить дополнительную логику
