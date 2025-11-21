@@ -99,14 +99,16 @@ axios.interceptors.response.use(
   function (error) {
     // Если ошибка CSRF (419), очищаем cookies и получаем новый токен
     if (error.response && error.response.status === 419) {
-      console.warn('CSRF token mismatch detected, cleaning cookies and refreshing token')
+      console.warn('CSRF token mismatch detected (419), cleaning cookies and refreshing token')
       cleanupAllOldCookies()
       cookiesCleaned = true
       csrfTokenValidated = false
       lastCleanupTime = Date.now()
 
       // Получаем новый CSRF токен с сервера
-      return axios.get('/sanctum/csrf-cookie').then(() => {
+      // Используем текущий URL для правильного домена
+      const csrfUrl = window.location.origin + '/sanctum/csrf-cookie'
+      return axios.get(csrfUrl, { withCredentials: true }).then(() => {
         // Обновляем токен в meta теге
         const metaToken = document.querySelector('meta[name="csrf-token"]')
         const newToken = getCookie('XSRF-TOKEN')
@@ -114,12 +116,17 @@ axios.interceptors.response.use(
           metaToken.setAttribute('content', newToken)
         }
 
-        // Пробуем повторить запрос
+        // Пробуем повторить запрос с новым токеном
         if (error.config) {
+          // Обновляем токен в заголовке запроса
+          if (newToken) {
+            error.config.headers.common['X-XSRF-TOKEN'] = newToken
+          }
           return axios.request(error.config)
         }
         return Promise.reject(error)
-      }).catch(() => {
+      }).catch((csrfError) => {
+        console.error('Failed to refresh CSRF token:', csrfError)
         return Promise.reject(error)
       })
     }
@@ -142,18 +149,52 @@ function getCookie(name) {
 }
 
 /**
+ * Получить базовый домен для cookies (работает с многоуровневыми поддоменами)
+ * Например: test1.dev.crater.billing.mycloud.kg -> .dev.crater.billing.mycloud.kg
+ */
+function getBaseDomain() {
+  const hostname = window.location.hostname
+  const parts = hostname.split('.')
+
+  // Для доменов типа test1.dev.crater.billing.mycloud.kg
+  // Базовый домен должен быть .dev.crater.billing.mycloud.kg
+  // Ищем паттерн: поддомен.основной_домен
+  if (parts.length >= 3) {
+    // Проверяем, есть ли известный основной домен
+    const knownDomains = [
+      'dev.crater.billing.mycloud.kg',
+      'crater.billing.mycloud.kg',
+      'crater.test'
+    ]
+
+    for (const knownDomain of knownDomains) {
+      const knownParts = knownDomain.split('.')
+      if (hostname.endsWith('.' + knownDomain) || hostname === knownDomain) {
+        return '.' + knownDomain
+      }
+    }
+
+    // Если не нашли известный домен, используем последние 3 части
+    // Для test1.dev.crater.billing.mycloud.kg -> .dev.crater.billing.mycloud.kg
+    if (parts.length >= 4) {
+      return '.' + parts.slice(-4).join('.')
+    }
+
+    // Для обычных доменов используем последние 2 части
+    return '.' + parts.slice(-2).join('.')
+  }
+
+  return hostname
+}
+
+/**
  * Автоматическая очистка старых/недействительных cookies
  */
 function cleanupOldCookies() {
   const allowedCookies = ['crater_session', 'XSRF-TOKEN']
   const cookies = document.cookie.split(';')
   const domain = window.location.hostname
-  const domainParts = domain.split('.')
-
-  // Получаем базовый домен (например, crater.test из test.crater.test)
-  const baseDomain = domainParts.length > 1
-    ? '.' + domainParts.slice(-2).join('.')
-    : domain
+  const baseDomain = getBaseDomain()
 
   let cleaned = false
 
@@ -164,13 +205,21 @@ function cleanupOldCookies() {
     if (!allowedCookies.includes(cookieName) &&
       /^[a-zA-Z0-9]{32,40}$/.test(cookieName) &&
       !cookieName.startsWith('remember_')) {
-      // Удаляем для текущего домена
-      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}`
 
-      // Удаляем для базового домена (с точкой)
-      if (baseDomain.startsWith('.')) {
-        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${baseDomain}`
-      }
+      // Удаляем для всех возможных вариантов домена
+      const domainsToClean = [
+        domain,
+        baseDomain,
+        '.' + domain,
+        baseDomain.startsWith('.') ? baseDomain : '.' + baseDomain
+      ].filter((d, i, arr) => arr.indexOf(d) === i) // Уникальные значения
+
+      domainsToClean.forEach(d => {
+        // Пробуем удалить с разными path
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${d}`
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/admin; domain=${d}`
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api; domain=${d}`
+      })
 
       cleaned = true
     }
@@ -190,19 +239,16 @@ function cleanupAllOldCookies() {
   // Новые будут установлены сервером автоматически
   const cookies = document.cookie.split(';')
   const domain = window.location.hostname
-  const domainParts = domain.split('.')
-
-  // Получаем базовый домен
-  const baseDomain = domainParts.length > 1
-    ? '.' + domainParts.slice(-2).join('.')
-    : domain
+  const baseDomain = getBaseDomain()
 
   // Все возможные варианты домена для удаления
-  const domains = []
-  if (domain) domains.push(domain)
-  if (baseDomain.startsWith('.')) domains.push(baseDomain)
-  domains.push('.' + domain)
-  domains.push('')
+  const domains = [
+    domain,
+    baseDomain,
+    '.' + domain,
+    baseDomain.startsWith('.') ? baseDomain : '.' + baseDomain,
+    '' // Без domain (для cookies без domain атрибута)
+  ].filter((d, i, arr) => arr.indexOf(d) === i) // Уникальные значения
 
   let cleaned = false
 
@@ -212,9 +258,12 @@ function cleanupAllOldCookies() {
     // Удаляем все cookies, включая crater_session и XSRF-TOKEN
     // Они будут заменены новыми от сервера
     domains.forEach(d => {
+      const domainPart = d ? `; domain=${d}` : ''
       // Удаляем с разными комбинациями path и domain
-      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/${d ? `; domain=${d}` : ''}`
-      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax${d ? `; domain=${d}` : ''}`
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/${domainPart}`
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/admin${domainPart}`
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api${domainPart}`
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax${domainPart}`
     })
     cleaned = true
   })
@@ -237,6 +286,8 @@ function updateCsrfToken(token) {
 
 // Проверяем и очищаем старые cookies при загрузке страницы
 if (typeof window !== 'undefined') {
+  let lastHostname = window.location.hostname
+
   // Выполняем проверку сразу при загрузке
   window.addEventListener('DOMContentLoaded', function () {
     const metaToken = document.querySelector('meta[name="csrf-token"]')
@@ -253,4 +304,35 @@ if (typeof window !== 'undefined') {
       cleanupOldCookies()
     }
   }, { once: true })
+
+  // Очищаем cookies при переходе на другой поддомен (например, при переключении тенанта)
+  window.addEventListener('focus', function () {
+    const currentHostname = window.location.hostname
+    if (currentHostname !== lastHostname) {
+      console.log('Domain changed detected, cleaning old cookies')
+      cleanupOldCookies()
+      lastHostname = currentHostname
+      cookiesCleaned = false
+      csrfTokenValidated = false
+    }
+  })
+
+  // Также проверяем при изменении URL (для SPA навигации)
+  let lastUrl = window.location.href
+  const checkUrlChange = () => {
+    if (window.location.href !== lastUrl) {
+      const currentHostname = window.location.hostname
+      if (currentHostname !== lastHostname) {
+        console.log('URL changed with different domain, cleaning old cookies')
+        cleanupOldCookies()
+        lastHostname = currentHostname
+        cookiesCleaned = false
+        csrfTokenValidated = false
+      }
+      lastUrl = window.location.href
+    }
+  }
+
+  // Проверяем каждые 500ms (для SPA)
+  setInterval(checkUrlChange, 500)
 }
