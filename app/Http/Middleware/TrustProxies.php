@@ -10,14 +10,20 @@ class TrustProxies extends Middleware
     /**
      * The trusted proxies for this application.
      *
-     * @var array
+     * @var array|string|null
      */
     protected $proxies;
 
     /**
      * The current proxy header mappings.
      *
-     * @var array
+     * @var int
      */
     protected $headers = Request::HEADER_X_FORWARDED_ALL;
+
+    public function __construct()
+    {
+        // Trust all proxies by default (for Docker/nginx setup)
+        $this->proxies = config('trustedproxy.proxies', '*');
+    }
 }
