@@ -8,6 +8,12 @@ use Illuminate\Validation\ValidationException;
 
 class Login extends BaseLogin
 {
+    public function mount(): void
+    {
+        parent::mount();
+        \Log::info('Filament Login: Component mounted');
+    }
+
     /**
      * Get the guard to use for authentication.
      *
@@ -15,6 +21,7 @@ class Login extends BaseLogin
      */
     protected function getGuard(): string
     {
+        \Log::info('Filament Login: getGuard called', ['guard' => 'admin']);
         return 'admin';
     }
 
@@ -25,7 +32,33 @@ class Login extends BaseLogin
      */
     protected function getUserModel(): string
     {
+        \Log::info('Filament Login: getUserModel called', ['model' => \App\Models\AdminUser::class]);
         return \App\Models\AdminUser::class;
+    }
+
+    /**
+     * Handle form submission.
+     */
+    public function authenticate(): void
+    {
+        \Log::info('Filament Login: authenticate method called', [
+            'email' => $this->email ?? 'not set',
+            'password' => isset($this->password) ? '***' : 'not set',
+        ]);
+
+        // Устанавливаем search_path перед аутентификацией
+        \Illuminate\Support\Facades\DB::statement('SET search_path TO admin');
+
+        try {
+            parent::authenticate();
+            \Log::info('Filament Login: parent::authenticate() succeeded');
+        } catch (\Exception $e) {
+            \Log::error('Filament Login: parent::authenticate() failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
     }
 
     /**
