@@ -40,10 +40,27 @@ class BootstrapController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
         
-        // Создаем меню перед использованием (если еще не создано)
-        if (tenancy()->initialized) {
-            $this->ensureMenusCreated();
+        // Если это центральный домен (админ-панель Filament), возвращаем минимальный ответ
+        // чтобы не обращаться к таблицам тенантов (companies, currencies, settings и т.д.)
+        if (!tenancy()->initialized) {
+            return response()->json([
+                'current_user' => new UserResource($current_user),
+                'current_user_settings' => [],
+                'current_user_abilities' => [],
+                'companies' => [],
+                'current_company' => null,
+                'current_company_settings' => [],
+                'current_company_currency' => null,
+                'config' => config('crater'),
+                'global_settings' => [],
+                'main_menu' => [],
+                'setting_menu' => [],
+                'modules' => [],
+            ]);
         }
+        
+        // Создаем меню перед использованием (если еще не создано)
+        $this->ensureMenusCreated();
         
         $current_user_settings = $current_user->getAllSettings();
 

@@ -16,12 +16,14 @@ return [
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
-    'central_domains' => [
+    'central_domains' => array_filter([
         '127.0.0.1',
         'localhost',
-        'crater.test',
-        config('app.main_domain'),
-    ],
+        'crater.test', // Local development
+        'crater.billing.mycloud.kg', // Production central domain
+        'dev.crater.billing.mycloud.kg', // Dev central domain
+        config('app.main_domain'), // Dynamic from .env (fallback)
+    ]),
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
