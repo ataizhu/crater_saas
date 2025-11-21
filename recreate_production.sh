@@ -17,6 +17,13 @@ cd /var/www/crater || exit 1
 echo "1. Останавливаем контейнеры..."
 docker compose down -v || true
 
+echo "1.1. Проверяем, что внешний nginx не конфликтует с портом 80..."
+if lsof -i :80 > /dev/null 2>&1; then
+    echo "✓ Внешний nginx работает на порту 80 (это нормально для production)"
+else
+    echo "⚠ Порт 80 свободен - возможно, нужно настроить внешний nginx"
+fi
+
 echo "2. Удаляем старую директорию (опционально, можно закомментировать для сохранения данных)..."
 # cd /var/www && rm -rf crater || true
 # mkdir -p /var/www/crater

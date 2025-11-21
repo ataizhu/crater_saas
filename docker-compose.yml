@@ -34,16 +34,18 @@ services:
     networks:
       - crater
 
-  nginx:
-    image: nginx:1.17-alpine
-    restart: unless-stopped
-    ports:
-      - 80:80
-    volumes:
-      - ./:/var/www
-      - ./docker-compose/nginx:/etc/nginx/conf.d/
-    networks:
-      - crater
+  # nginx контейнер не нужен для production - используется внешний nginx на сервере
+  # который проксирует запросы напрямую в PHP-FPM на порт 9000
+  # nginx:
+  #   image: nginx:1.17-alpine
+  #   restart: unless-stopped
+  #   ports:
+  #     - 80:80
+  #   volumes:
+  #     - ./:/var/www
+  #     - ./docker-compose/nginx:/etc/nginx/conf.d/
+  #   networks:
+  #     - crater
 
   cron:
     build:
