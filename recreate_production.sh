@@ -75,6 +75,26 @@ docker compose exec db psql -U crater -d crater_saas -c "ALTER DATABASE crater_s
 echo "11. Запускаем миграции..."
 docker compose exec -u root app php artisan migrate --force
 
+echo "11.1. Проверяем и создаем таблицу users, если её нет..."
+docker compose exec -u root app php artisan tinker --execute="
+DB::statement('SET search_path TO admin');
+if (!DB::select(\"SELECT 1 FROM information_schema.tables WHERE table_schema = 'admin' AND table_name = 'users'\")) {
+    echo 'Создаем таблицу users...' . PHP_EOL;
+    DB::statement('CREATE TABLE IF NOT EXISTS users (
+        id BIGSERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        remember_token VARCHAR(100),
+        created_at TIMESTAMP,
+        updated_at TIMESTAMP
+    )');
+    echo 'Таблица users создана.' . PHP_EOL;
+} else {
+    echo 'Таблица users уже существует.' . PHP_EOL;
+}
+" || true
+
 echo "12. Создаем admin пользователя..."
 docker compose exec -u root app php artisan admin:create "Admin" "admin@example.com" "testtest" --update || true
 
