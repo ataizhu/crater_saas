@@ -8,6 +8,18 @@ use Illuminate\Validation\ValidationException;
 
 class Login extends BaseLogin
 {
+    public function mount(): void
+    {
+        \Log::info('Filament Login: Component mounted', [
+            'host' => request()->getHost(),
+            'url' => request()->url(),
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+        
+        parent::mount();
+    }
+
     /**
      * Get the guard to use for authentication.
      *
