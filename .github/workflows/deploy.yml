@@ -107,19 +107,26 @@ jobs:
           echo "Checking if npm install is needed..."
           if docker compose exec -T app test -d /var/www/node_modules && docker compose exec -T app test -f /var/www/package-lock.json; then
             echo "node_modules exists, checking if package.json changed..."
-            if docker compose exec -T app sh -c 'test "$(git diff HEAD~1 HEAD --name-only | grep -E "package\.(json|lock)")" = ""'; then
-              echo "package.json not changed, skipping npm install"
+            PACKAGE_CHANGED=$(docker compose exec -T app sh -c 'git diff HEAD~1 HEAD --name-only 2>/dev/null | grep -E "package\.(json|lock)" || echo ""' || echo "")
+            if [ -z "$PACKAGE_CHANGED" ]; then
+              echo "package.json not changed, skipping npm install and build"
             else
               echo "package.json changed, reinstalling dependencies..."
               docker compose exec -u root app rm -rf /var/www/node_modules /var/www/package-lock.json || true
               docker compose exec -u root app npm install || true
+              echo "Building frontend assets..."
+              docker compose exec -u root app npm run build || true
             fi
           else
             echo "node_modules missing, installing dependencies..."
             docker compose exec -u root app npm install || true
+            echo "Building frontend assets..."
+            docker compose exec -u root app npm run build || true
           fi
-          echo "Building frontend assets..."
-          docker compose exec -u root app npm run build || true
+          echo "Creating log file if not exists..."
+          docker compose exec -u root app touch /var/www/storage/logs/laravel-$(date +%Y-%m-%d).log || true
+          docker compose exec -u root app chmod 666 /var/www/storage/logs/laravel-$(date +%Y-%m-%d).log || true
+          docker compose exec -u root app chown www-data:www-data /var/www/storage/logs/laravel-$(date +%Y-%m-%d).log || true
           echo "Clearing Opcache by restarting PHP-FPM..."
           docker compose restart app || true
           echo "PRODUCTION deployment completed successfully!"
@@ -194,5 +201,9 @@ jobs:
           fi
           echo "Building frontend assets..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app npm run build || true
+          echo "Creating log file if not exists..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app touch /var/www/storage/logs/laravel-$(date +%Y-%m-%d).log || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chmod 666 /var/www/storage/logs/laravel-$(date +%Y-%m-%d).log || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chown www-data:www-data /var/www/storage/logs/laravel-$(date +%Y-%m-%d).log || true
           echo "DEV deployment completed successfully!"
 
