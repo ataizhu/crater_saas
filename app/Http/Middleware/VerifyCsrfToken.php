@@ -33,6 +33,10 @@ class VerifyCsrfToken extends Middleware
         // Customer auth routes
         'api/v1/*/customer/auth/password/email',
         'api/v1/*/customer/auth/reset/password',
+        
+        // Livewire routes (Filament использует Livewire)
+        'livewire/*',
+        'admin/livewire/*',
     ];
 
     /**
