@@ -34,9 +34,15 @@ class EncryptCookies extends Middleware
         $cookiesBefore = array_keys($request->cookies->all());
         $sessionCookieName = config('session.cookie');
         
-        // Оптимизация: проверяем cookies только если их много (больше 4) или при POST/PUT/PATCH/DELETE
+        // Проверяем cookies если:
+        // 1. Их много (больше 4)
+        // 2. Это POST/PUT/PATCH/DELETE запрос
+        // 3. Это первый запрос после перехода на поддомен (нет валидной сессии)
         $method = $request->getMethod();
-        $shouldCheck = count($cookiesBefore) > 4 || in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE']);
+        $hasValidSession = $request->hasSession() && $request->session()->isStarted();
+        $shouldCheck = count($cookiesBefore) > 4 || 
+                      in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE']) ||
+                      (!$hasValidSession && count($cookiesBefore) > 2);
         
         if (!$shouldCheck) {
             return parent::decrypt($request);
@@ -124,13 +130,28 @@ class EncryptCookies extends Middleware
                 strpos($cookieName, 'remember_') !== 0) {
                 $cookiesToRemove[] = $cookieName;
                 // Устанавливаем cookie с истекшим сроком для всех возможных доменов
+                $sessionDomain = config('session.domain');
+                $appHost = parse_url(config('app.url'), PHP_URL_HOST);
+                $currentHost = $request->getHost();
+                
                 $domains = array_filter([
-                    config('session.domain'),
-                    '.' . parse_url(config('app.url'), PHP_URL_HOST),
+                    $sessionDomain,
+                    '.' . $appHost,
+                    $currentHost,
+                    '.' . $currentHost,
                 ]);
+                
+                // Для поддоменов добавляем базовый домен
+                if ($sessionDomain && strpos($sessionDomain, '.') === 0) {
+                    $domains[] = $sessionDomain;
+                }
+                
                 foreach (array_unique($domains) as $domain) {
                     if ($domain) {
+                        // Удаляем с разными path для полной очистки
                         $response->headers->removeCookie($cookieName, '/', $domain);
+                        $response->headers->removeCookie($cookieName, '/admin', $domain);
+                        $response->headers->removeCookie($cookieName, '/api', $domain);
                     }
                 }
             }
