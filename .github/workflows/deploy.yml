@@ -104,10 +104,14 @@ jobs:
           echo "Fixing permissions after clearing caches..."
           docker compose exec -u root app chmod -R 775 /var/www/storage /var/www/bootstrap/cache || true
           docker compose exec -u root app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
-          echo "Cleaning node_modules and package-lock.json..."
-          docker compose exec -u root app rm -rf /var/www/node_modules /var/www/package-lock.json || true
-          echo "Installing npm dependencies..."
-          docker compose exec -u root app npm install || true
+          echo "Checking if npm install is needed..."
+          if docker compose exec -T app git diff --quiet HEAD HEAD~1 -- package.json package-lock.json 2>/dev/null; then
+            echo "package.json not changed, skipping npm install"
+          else
+            echo "package.json changed, cleaning and installing dependencies..."
+            docker compose exec -u root app rm -rf /var/www/node_modules /var/www/package-lock.json || true
+            docker compose exec -u root app npm install || true
+          fi
           echo "Building frontend assets..."
           docker compose exec -u root app npm run build || true
           echo "Clearing Opcache by restarting PHP-FPM..."
@@ -168,8 +172,14 @@ jobs:
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:cache || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan route:cache || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan view:cache || true
-          echo "Installing npm dependencies..."
-          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app npm install || true
+          echo "Checking if npm install is needed..."
+          if docker compose -p crater-dev -f docker-compose.dev.yml exec -T app git diff --quiet HEAD HEAD~1 -- package.json package-lock.json 2>/dev/null; then
+            echo "package.json not changed, skipping npm install"
+          else
+            echo "package.json changed, cleaning and installing dependencies..."
+            docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app rm -rf /var/www/node_modules /var/www/package-lock.json || true
+            docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app npm install || true
+          fi
           echo "Building frontend assets..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app npm run build || true
           echo "DEV deployment completed successfully!"

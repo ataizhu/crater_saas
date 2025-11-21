@@ -3,6 +3,9 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
     base: '/build/', // Fix asset paths
+    build: {
+        target: 'es2020', // Поддержка BigInt literals
+    },
     server: {
         watch: {
             ignored: ['**/.env/**'],
