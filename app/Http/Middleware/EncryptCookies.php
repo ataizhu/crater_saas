@@ -37,12 +37,9 @@ class EncryptCookies extends Middleware
         // Проверяем cookies если:
         // 1. Их много (больше 4)
         // 2. Это POST/PUT/PATCH/DELETE запрос
-        // 3. Это первый запрос после перехода на поддомен (нет валидной сессии)
         $method = $request->getMethod();
-        $hasValidSession = $request->hasSession() && $request->session()->isStarted();
         $shouldCheck = count($cookiesBefore) > 4 || 
-                      in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE']) ||
-                      (!$hasValidSession && count($cookiesBefore) > 2);
+                      in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE']);
         
         if (!$shouldCheck) {
             return parent::decrypt($request);
@@ -132,13 +129,10 @@ class EncryptCookies extends Middleware
                 // Устанавливаем cookie с истекшим сроком для всех возможных доменов
                 $sessionDomain = config('session.domain');
                 $appHost = parse_url(config('app.url'), PHP_URL_HOST);
-                $currentHost = $request->getHost();
                 
                 $domains = array_filter([
                     $sessionDomain,
                     '.' . $appHost,
-                    $currentHost,
-                    '.' . $currentHost,
                 ]);
                 
                 // Для поддоменов добавляем базовый домен
