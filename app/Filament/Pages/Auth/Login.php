@@ -78,11 +78,18 @@ class Login extends BaseLogin
         \Illuminate\Support\Facades\DB::statement('SET search_path TO admin');
 
         // Логирование для диагностики
+        try {
+            $searchPath = \Illuminate\Support\Facades\DB::selectOne("SELECT current_setting('search_path') as search_path");
+            $searchPathValue = $searchPath ? $searchPath->search_path : 'unknown';
+        } catch (\Exception $e) {
+            $searchPathValue = 'error: ' . $e->getMessage();
+        }
+
         \Log::info('Filament Login: Attempting authentication', [
             'email' => $data['email'],
             'guard' => $guard,
             'user_model' => $userModel,
-            'search_path' => \Illuminate\Support\Facades\DB::selectOne("SHOW search_path")->search_path ?? 'unknown',
+            'search_path' => $searchPathValue,
         ]);
 
         $user = $userModel::where('email', $data['email'])->first();
