@@ -41,6 +41,9 @@ class Login extends BaseLogin
         $guard = $this->getGuard();
         $userModel = $this->getUserModel();
 
+        // Устанавливаем search_path для текущей сессии перед поиском пользователя
+        \Illuminate\Support\Facades\DB::statement('SET search_path TO admin');
+
         $user = $userModel::where('email', $data['email'])->first();
 
         if (!$user || !\Hash::check($data['password'], $user->password)) {
