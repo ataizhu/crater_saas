@@ -23,14 +23,15 @@ class CreateAdminUser extends Command
             \Illuminate\Support\Facades\DB::statement('SET search_path TO admin');
             
             // Проверяем, существует ли пользователь через DB напрямую
-            $existing = \Illuminate\Support\Facades\DB::table('admin.users')
+            // Используем просто 'users', так как search_path уже установлен на 'admin'
+            $existing = \Illuminate\Support\Facades\DB::table('users')
                 ->where('email', $email)
                 ->first();
             
             if ($existing) {
                 if ($this->option('update')) {
                     // Обновляем пароль существующего пользователя
-                    \Illuminate\Support\Facades\DB::table('admin.users')
+                    \Illuminate\Support\Facades\DB::table('users')
                         ->where('email', $email)
                         ->update([
                             'name' => $name,
@@ -50,7 +51,7 @@ class CreateAdminUser extends Command
             }
             
             // Создаем пользователя через DB напрямую, чтобы избежать проблем с Eloquent
-            $userId = \Illuminate\Support\Facades\DB::table('admin.users')->insertGetId([
+            $userId = \Illuminate\Support\Facades\DB::table('users')->insertGetId([
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make($password),
