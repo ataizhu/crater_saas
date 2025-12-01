@@ -159,6 +159,11 @@ jobs:
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
           echo "Generating application key if not set..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan key:generate --force || true
+          
+          echo "Fixing SANCTUM_STATEFUL_DOMAINS in .env if needed..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "if grep -q '^SANCTUM_STATEFUL_DOMAINS=' /var/www/.env; then sed -i 's|^SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=dev.crater.billing.mycloud.kg,*.dev.crater.billing.mycloud.kg|' /var/www/.env; else echo 'SANCTUM_STATEFUL_DOMAINS=dev.crater.billing.mycloud.kg,*.dev.crater.billing.mycloud.kg' >> /var/www/.env; fi" || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chmod 644 /var/www/.env || true
+          
           echo "Clearing config cache before migration..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan config:clear || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app rm -rf /var/www/bootstrap/cache/*.php || true
@@ -199,11 +204,35 @@ jobs:
             echo "node_modules missing, installing dependencies..."
             docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app npm install || true
           fi
-          echo "Building frontend assets..."
-          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app npm run build || true
+          echo "Building frontend assets (dev always builds after fresh DB)..."
+          if ! docker compose -p crater-dev -f docker-compose.dev.yml exec -T app test -d /var/www/node_modules; then
+            echo "Installing npm dependencies..."
+            docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app npm install || true
+          fi
+          echo "Building frontend assets with increased memory..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "NODE_OPTIONS=--max-old-space-size=4096 npm run build" || true
+          if docker compose -p crater-dev -f docker-compose.dev.yml exec -T app test -f /var/www/public/build/manifest.json; then
+            echo "Build successful, fixing permissions..."
+            docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chmod -R 755 /var/www/public/build || true
+            docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chown -R www-data:www-data /var/www/public/build || true
+          else
+            echo "ERROR: Build failed or manifest.json not found! Retrying build..."
+            docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "NODE_OPTIONS=--max-old-space-size=6144 npm run build" || true
+            if docker compose -p crater-dev -f docker-compose.dev.yml exec -T app test -f /var/www/public/build/manifest.json; then
+              echo "Build successful on retry, fixing permissions..."
+              docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chmod -R 755 /var/www/public/build || true
+              docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chown -R www-data:www-data /var/www/public/build || true
+            else
+              echo "ERROR: Build failed even with increased memory!"
+            fi
+          fi
           echo "Creating log file if not exists..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app touch /var/www/storage/logs/laravel-$(date +%Y-%m-%d).log || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chmod 666 /var/www/storage/logs/laravel-$(date +%Y-%m-%d).log || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chown www-data:www-data /var/www/storage/logs/laravel-$(date +%Y-%m-%d).log || true
+          
+          echo "Clearing Opcache by restarting PHP-FPM..."
+          docker compose -p crater-dev -f docker-compose.dev.yml restart app || true
+          
           echo "DEV deployment completed successfully!"
 
