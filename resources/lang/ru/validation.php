@@ -110,9 +110,13 @@ return [
         'attribute-name' => [
             'rule-name' => 'custom-message',
         ],
+        'id' => [
+            'regex' => 'ID может содержать только строчные буквы (a-z), цифры (0-9) и подчеркивания (_). Дефисы не допускаются.',
+        ],
     ],
 
     'attributes' => [
+        'id' => 'ID',
         'name' => 'имя',
         'username' => 'логин',
         'email' => 'email',
