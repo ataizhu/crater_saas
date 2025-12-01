@@ -42,7 +42,8 @@ class InitializeTenantCommand extends Command
         $prefix = config('tenancy.database.prefix', 'tenant');
         $schemaName = $prefix . $tenant->id;
         $this->info("Creating schema: {$schemaName}");
-        DB::statement("CREATE SCHEMA IF NOT EXISTS {$schemaName}");
+        // Экранируем имя схемы кавычками для поддержки специальных символов (обратная совместимость)
+        DB::statement("CREATE SCHEMA IF NOT EXISTS \"{$schemaName}\"");
         
         // Удаляем схему public если она была создана (PostgreSQL может создать её автоматически)
         // Это предотвращает создание таблиц в схеме public
@@ -55,7 +56,8 @@ class InitializeTenantCommand extends Command
         // Это гарантирует, что все таблицы создаются в правильной схеме
         // Используем прямое подключение PDO для гарантированной установки
         $pdo = DB::connection()->getPdo();
-        $pdo->exec("SET search_path TO {$schemaName}");
+        // Экранируем имя схемы кавычками для поддержки специальных символов
+        $pdo->exec("SET search_path TO \"{$schemaName}\"");
         
         // Проверяем текущий search_path (для отладки)
         $currentPath = $pdo->query("SHOW search_path")->fetchColumn();
@@ -69,6 +71,7 @@ class InitializeTenantCommand extends Command
         ]);
         
         // Проверяем, в какой схеме создались таблицы (для отладки)
+        // Экранируем имя схемы кавычками для поддержки специальных символов
         $tables = DB::select("SELECT schemaname, tablename FROM pg_tables WHERE schemaname IN ('{$schemaName}', 'public') ORDER BY schemaname, tablename");
         $this->info("Tables created in schemas:");
         foreach ($tables as $table) {

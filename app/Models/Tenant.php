@@ -29,6 +29,15 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     {
         parent::booted();
 
+        static::creating(function ($tenant) {
+            // Валидация ID тенанта: только строчные буквы, цифры и подчеркивания
+            if (!preg_match('/^[a-z0-9_]+$/', $tenant->id)) {
+                throw new \InvalidArgumentException(
+                    'ID тенанта может содержать только строчные буквы (a-z), цифры (0-9) и подчеркивания (_). Дефисы и другие специальные символы не допускаются.'
+                );
+            }
+        });
+
         static::created(function ($tenant) {
             // Создание домена для субдомена
             $tenant->domains()->create([

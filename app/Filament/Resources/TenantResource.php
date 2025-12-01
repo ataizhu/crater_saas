@@ -39,8 +39,11 @@ class TenantResource extends Resource
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255)
-                    ->helperText('Будет доступен на: subdomain.crater.test')
-                    ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
+                    ->helperText('Только строчные буквы, цифры и подчеркивания. Будет доступен на: subdomain.crater.test')
+                    ->regex('/^[a-z0-9_]+$/')
+                    ->validationMessages([
+                        'regex' => 'ID может содержать только строчные буквы (a-z), цифры (0-9) и подчеркивания (_). Дефисы не допускаются.',
+                    ]),
                     
                 Forms\Components\TextInput::make('name')
                     ->label('Название компании')
