@@ -40,6 +40,13 @@ jobs:
           docker compose exec -u root app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache || true
           echo "Generating application key if not set..."
           docker compose exec -u root app php artisan key:generate --force || true
+          
+          echo "Fixing session isolation settings for production..."
+          docker compose exec -u root app sh -c "if grep -q '^SESSION_COOKIE=' /var/www/.env; then sed -i 's|^SESSION_COOKIE=.*|SESSION_COOKIE=crater_prod_session|' /var/www/.env; else echo 'SESSION_COOKIE=crater_prod_session' >> /var/www/.env; fi" || true
+          docker compose exec -u root app sh -c "if grep -q '^SESSION_DOMAIN=' /var/www/.env; then sed -i 's|^SESSION_DOMAIN=.*|SESSION_DOMAIN=.crater.billing.mycloud.kg|' /var/www/.env; else echo 'SESSION_DOMAIN=.crater.billing.mycloud.kg' >> /var/www/.env; fi" || true
+          docker compose exec -u root app sh -c "if grep -q '^SANCTUM_STATEFUL_DOMAINS=' /var/www/.env; then sed -i 's|^SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=crater.billing.mycloud.kg,*.crater.billing.mycloud.kg|' /var/www/.env; else echo 'SANCTUM_STATEFUL_DOMAINS=crater.billing.mycloud.kg,*.crater.billing.mycloud.kg' >> /var/www/.env; fi" || true
+          docker compose exec -u root app chmod 644 /var/www/.env || true
+          
           echo "Clearing config cache before migration..."
           docker compose exec -u root app php artisan config:clear || true
           docker compose exec -u root app rm -rf /var/www/bootstrap/cache/*.php || true
@@ -160,7 +167,9 @@ jobs:
           echo "Generating application key if not set..."
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app php artisan key:generate --force || true
           
-          echo "Fixing SANCTUM_STATEFUL_DOMAINS in .env if needed..."
+          echo "Fixing session isolation settings for dev..."
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "if grep -q '^SESSION_COOKIE=' /var/www/.env; then sed -i 's|^SESSION_COOKIE=.*|SESSION_COOKIE=crater_dev_session|' /var/www/.env; else echo 'SESSION_COOKIE=crater_dev_session' >> /var/www/.env; fi" || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "if grep -q '^SESSION_DOMAIN=' /var/www/.env; then sed -i 's|^SESSION_DOMAIN=.*|SESSION_DOMAIN=.dev.crater.billing.mycloud.kg|' /var/www/.env; else echo 'SESSION_DOMAIN=.dev.crater.billing.mycloud.kg' >> /var/www/.env; fi" || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "if grep -q '^SANCTUM_STATEFUL_DOMAINS=' /var/www/.env; then sed -i 's|^SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=dev.crater.billing.mycloud.kg,*.dev.crater.billing.mycloud.kg|' /var/www/.env; else echo 'SANCTUM_STATEFUL_DOMAINS=dev.crater.billing.mycloud.kg,*.dev.crater.billing.mycloud.kg' >> /var/www/.env; fi" || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chmod 644 /var/www/.env || true
           
