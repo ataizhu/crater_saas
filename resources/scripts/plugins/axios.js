@@ -168,16 +168,21 @@ function getBaseDomain() {
     ]
 
     for (const knownDomain of knownDomains) {
-      const knownParts = knownDomain.split('.')
-      if (hostname.endsWith('.' + knownDomain) || hostname === knownDomain) {
+      // Проверяем точное совпадение или поддомен
+      if (hostname === knownDomain || hostname.endsWith('.' + knownDomain)) {
         return '.' + knownDomain
       }
     }
 
-    // Если не нашли известный домен, используем последние 3 части
+    // Если не нашли известный домен, определяем базовый домен по паттерну
     // Для test1.dev.crater.billing.mycloud.kg -> .dev.crater.billing.mycloud.kg
-    if (parts.length >= 4) {
+    // Для test1.crater.billing.mycloud.kg -> .crater.billing.mycloud.kg
+    if (parts.length >= 5) {
+      // test1.dev.crater.billing.mycloud.kg -> .dev.crater.billing.mycloud.kg
       return '.' + parts.slice(-4).join('.')
+    } else if (parts.length >= 4) {
+      // test1.crater.billing.mycloud.kg -> .crater.billing.mycloud.kg
+      return '.' + parts.slice(-3).join('.')
     }
 
     // Для обычных доменов используем последние 2 части
@@ -191,7 +196,7 @@ function getBaseDomain() {
  * Автоматическая очистка старых/недействительных cookies
  */
 function cleanupOldCookies() {
-  const allowedCookies = ['crater_session', 'XSRF-TOKEN']
+  const allowedCookies = ['crater_session', 'crater_prod_session', 'crater_dev_session', 'XSRF-TOKEN']
   const cookies = document.cookie.split(';')
   const domain = window.location.hostname
   const baseDomain = getBaseDomain()

@@ -171,6 +171,7 @@ jobs:
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "if grep -q '^SESSION_COOKIE=' /var/www/.env; then sed -i 's|^SESSION_COOKIE=.*|SESSION_COOKIE=crater_dev_session|' /var/www/.env; else echo 'SESSION_COOKIE=crater_dev_session' >> /var/www/.env; fi" || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "if grep -q '^SESSION_DOMAIN=' /var/www/.env; then sed -i 's|^SESSION_DOMAIN=.*|SESSION_DOMAIN=.dev.crater.billing.mycloud.kg|' /var/www/.env; else echo 'SESSION_DOMAIN=.dev.crater.billing.mycloud.kg' >> /var/www/.env; fi" || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "if grep -q '^SANCTUM_STATEFUL_DOMAINS=' /var/www/.env; then sed -i 's|^SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=dev.crater.billing.mycloud.kg,*.dev.crater.billing.mycloud.kg|' /var/www/.env; else echo 'SANCTUM_STATEFUL_DOMAINS=dev.crater.billing.mycloud.kg,*.dev.crater.billing.mycloud.kg' >> /var/www/.env; fi" || true
+          docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app sh -c "if grep -q '^LOG_CSRF_FAILURES=' /var/www/.env; then sed -i 's|^LOG_CSRF_FAILURES=.*|LOG_CSRF_FAILURES=true|' /var/www/.env; else echo 'LOG_CSRF_FAILURES=true' >> /var/www/.env; fi" || true
           docker compose -p crater-dev -f docker-compose.dev.yml exec -u root app chmod 644 /var/www/.env || true
           
           echo "Clearing config cache before migration..."
